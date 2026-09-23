@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="pt-BR">
+	<head>
+		<meta charset="utf-8" />
+		<meta
+			http-equiv="Content-Security-Policy"
+			content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; media-src 'self' blob:"
+		/>
+		<title>MechaIntro</title>
+		<link rel="stylesheet" href="../node_modules/@fortawesome/fontawesome-free/css/all.min.css" />
+		<link rel="stylesheet" href="styles/theme.css" />
+		<link rel="stylesheet" href="styles/app.css" />
+	</head>
+	<body>
+		<div id="app">
+			<header class="titlebar" id="titlebar"></header>
+
+			<div class="workspace">
+				<aside class="panel layers-panel" id="layers-panel"></aside>
+
+				<main class="stage-area" id="stage-area"></main>
+
+				<aside class="panel inspector-panel" id="inspector-panel"></aside>
+			</div>
+
+			<div class="splitter" id="timeline-splitter" title="Arraste para redimensionar"></div>
+
+			<section class="panel timeline-panel" id="timeline-panel"></section>
+		</div>
+
+		<div id="modal-root"></div>
+		<div id="toast-root"></div>
+
+		<script type="module" src="js/main.js"></script>
+	</body>
+</html>

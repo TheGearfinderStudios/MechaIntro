@@ -1,0 +1,59 @@
+{
+	"name": "mecha-intro",
+	"productName": "MechaIntro",
+	"version": "0.1.0",
+	"description": "Video intro builder for The Gearfinder Society",
+	"main": "electron/main.js",
+	"type": "module",
+	"author": "Gearfinder Studios",
+	"license": "GPL-3.0-or-later",
+	"private": true,
+	"engines": {
+		"node": ">=22"
+	},
+	"scripts": {
+		"postinstall": "node scripts/build-icon-catalog.mjs",
+		"icons": "node scripts/build-icon-catalog.mjs",
+		"start": "node scripts/start.mjs",
+		"dev": "node scripts/start.mjs --dev",
+		"test": "node --test",
+		"dist": "electron-builder --win"
+	},
+	"dependencies": {
+		"@fortawesome/fontawesome-free": "^7.3.1",
+		"ffmpeg-static": "^5.3.0"
+	},
+	"devDependencies": {
+		"electron": "^44.4.5",
+		"electron-builder": "^26.15.3"
+	},
+	"build": {
+		"appId": "com.gearfinder.mechaintro",
+		"productName": "MechaIntro",
+		"directories": {
+			"output": "dist"
+		},
+		"files": [
+			"electron/**",
+			"src/**",
+			"build/icon.png",
+			"package.json",
+			"!node_modules/@fortawesome/fontawesome-free/{metadata,svgs,svgs-full,sprites,sprites-full,js,scss,less}/**"
+		],
+		"extraFiles": [
+			"LICENSE",
+			"THIRD_PARTY_NOTICES.md"
+		],
+		"electronLanguages": [
+			"pt-BR",
+			"en-US"
+		],
+		"asarUnpack": [
+			"node_modules/ffmpeg-static/**"
+		],
+		"win": {
+			"target": "nsis",
+			"icon": "build/icon.png"
+		}
+	}
+}

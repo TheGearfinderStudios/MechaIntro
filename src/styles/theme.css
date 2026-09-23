@@ -1,0 +1,97 @@
+/**
+ * styles/theme.css
+ *
+ * "Steampunk" - the Gear Mechanica UI standard, carried over from
+ * Gear-Mechanica-Client/src/UI/Theme/Steampunk.css. The client declares these on
+ * :host inside each component's shadow root; this app has no shadow roots, so
+ * they sit on :root. Keep the two palettes in step.
+ *
+ *   --brass  #d9c69c  the page - surfaces, nameplates, and every detail drawn
+ *                     on top of something dark
+ *   --iron   #423837  the plate - the top face of a panel
+ *   --coal   #322f35  the recess - what a gauge or a socket sinks into
+ *
+ * A window is a dark translucent shell holding a brass page. Text on brass is
+ * --iron or --coal; text on coal is brass. Icons are Font Awesome 7 Free.
+ *
+ * SPDX-License-Identifier: GPL-3.0-or-later
+ */
+
+*,
+*::before,
+*::after {
+	box-sizing: border-box;
+}
+
+:root {
+	/* Base */
+	--brass: #d9c69c;
+	--iron: #423837;
+	--coal: #322f35;
+
+	/* Derived tones */
+	--brass-bright: #f2e6c9;
+	--brass-dim: #a8916c;
+	--brass-deep: #6d5c3d;
+	--iron-light: #574a48;
+	--coal-deep: #1c1a1f;
+
+	/* Gauge inks */
+	--ink-hp: #c2483a;
+	--ink-sp: #3f8b93;
+	--ink-ap: #d2a02f;
+	--ink-exp-base: #d9a441;
+	--ink-exp-job: #6fa3b4;
+	--ink-alert: #e2653c;
+
+	--font-ui: 'SCDream', Arial, 'Liberation Sans', Arimo, sans-serif;
+
+	/* Surfaces, as the Inventory window draws them */
+	--shell: rgba(28, 26, 31, 0.85);
+	--hairline: rgba(217, 198, 156, 0.2);
+	--hairline-soft: rgba(217, 198, 156, 0.08);
+	--plate: linear-gradient(to bottom, var(--iron) 0%, var(--coal) 100%);
+
+	color-scheme: dark;
+}
+
+/* ── Scrollbars ─────────────────────────────────────────────────────────────
+ * Same rule as the client: anything that scrolls opts in with data-scrollbar="css". */
+@supports not selector(::-webkit-scrollbar) {
+	[data-scrollbar='css'] {
+		scrollbar-width: thin;
+		scrollbar-color: var(--iron) rgba(50, 47, 53, 0.12);
+	}
+}
+
+[data-scrollbar='css']::-webkit-scrollbar {
+	width: 10px;
+	height: 10px;
+}
+
+[data-scrollbar='css']::-webkit-scrollbar-track {
+	background: rgba(50, 47, 53, 0.12);
+	border-left: 1px solid rgba(50, 47, 53, 0.18);
+	border-radius: 0 3px 3px 0;
+}
+
+[data-scrollbar='css']::-webkit-scrollbar-thumb {
+	background: linear-gradient(to right, var(--iron-light), var(--iron));
+	border: 1px solid var(--brass-deep);
+	border-radius: 5px;
+	min-height: 24px;
+}
+
+[data-scrollbar='css']::-webkit-scrollbar-thumb:hover {
+	background: linear-gradient(to right, var(--iron), var(--iron-light));
+	border-color: var(--brass-dim);
+}
+
+[data-scrollbar='css']::-webkit-scrollbar-thumb:active {
+	background: var(--coal);
+}
+
+[data-scrollbar='css']::-webkit-scrollbar-button,
+[data-scrollbar='css']::-webkit-scrollbar-corner {
+	display: none;
+}
