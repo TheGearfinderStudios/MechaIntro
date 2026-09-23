@@ -9,6 +9,7 @@
  */
 
 import { h, fa, panelTitle } from './dom.js';
+import { t } from '../i18n/index.js';
 
 export const TYPE_ICONS = { icon: 'icons', text: 'font', image: 'image', audio: 'music', background: 'fill-drip' };
 
@@ -19,26 +20,29 @@ export class LayersView {
 		this.list = h('div', { class: 'page', 'data-scrollbar': 'css' });
 
 		root.append(
-			panelTitle('layer-group', 'Camadas'),
+			panelTitle('layer-group', t('layers.title')),
 			h(
 				'div',
 				{ class: 'tool-header' },
-				h('span', { class: 'label' }, 'Adicionar'),
-				this._addButton('icons', 'Ícone', () => commands.addIcon()),
-				this._addButton('font', 'Texto', () => commands.addText()),
-				this._addButton('image', 'Imagem', () => commands.addImage()),
-				this._addButton('music', 'Áudio', () => commands.addAudio())
+				h('span', { class: 'label' }, t('layers.add')),
+				this._addButton('icons', t('layers.addIcon'), () => commands.addIcon()),
+				this._addButton('font', t('layers.addText'), () => commands.addText()),
+				this._addButton('image', t('layers.addImage'), () => commands.addImage()),
+				this._addButton('music', t('layers.addAudio'), () => commands.addAudio())
 			),
 			this.list
 		);
 
-		store.on('project', () => this.render());
-		store.on('selection', () => this.render());
+		this._off = [store.on('project', () => this.render()), store.on('selection', () => this.render())];
 		this.render();
 	}
 
+	destroy() {
+		this._off.forEach(off => off());
+	}
+
 	_addButton(icon, title, onClick) {
-		return h('button', { class: 'icon-btn', title: `Adicionar ${title.toLowerCase()}`, onClick }, fa(icon));
+		return h('button', { class: 'icon-btn', title, onClick }, fa(icon));
 	}
 
 	render() {
@@ -52,19 +56,19 @@ export class LayersView {
 				onClick: () => this.store.select('background')
 			},
 			h('span', { class: 'type-icon' }, fa(TYPE_ICONS.background)),
-			h('span', { class: 'name' }, 'Projeto e fundo')
+			h('span', { class: 'name' }, t('layers.projectAndBackground'))
 		);
 
 		const visual = [...project.layers].reverse().map(layer => this._layerRow(layer, selection));
 		const audio = project.audio.map(clip => this._audioRow(clip, selection));
 
 		this.list.replaceChildren(
-			h('div', { class: 'layer-group-label' }, 'Cena'),
+			h('div', { class: 'layer-group-label' }, t('layers.scene')),
 			background,
-			h('div', { class: 'layer-group-label' }, fa('eye'), 'Visual'),
-			...(visual.length ? visual : [h('div', { class: 'layer-empty' }, 'Nenhuma camada ainda')]),
-			h('div', { class: 'layer-group-label' }, fa('volume-high'), 'Áudio'),
-			...(audio.length ? audio : [h('div', { class: 'layer-empty' }, 'Nenhum som ainda')])
+			h('div', { class: 'layer-group-label' }, fa('eye'), t('layers.visual')),
+			...(visual.length ? visual : [h('div', { class: 'layer-empty' }, t('layers.noLayers'))]),
+			h('div', { class: 'layer-group-label' }, fa('volume-high'), t('layers.audio')),
+			...(audio.length ? audio : [h('div', { class: 'layer-empty' }, t('layers.noAudio'))])
 		);
 
 		this.list.scrollTop = scroll;
@@ -107,12 +111,12 @@ export class LayersView {
 			},
 			h('span', { class: 'type-icon' }, icon),
 			layer.color && layer.type !== 'image' ? h('span', { class: 'swatch-dot', style: { background: layer.color } }) : null,
-			h('span', { class: 'name', title: layer.name }, layer.name || '(sem nome)'),
+			h('span', { class: 'name', title: layer.name }, layer.name || t('common.unnamed')),
 			h(
 				'button',
 				{
 					class: 'row-btn',
-					title: layer.visible ? 'Ocultar' : 'Mostrar',
+					title: layer.visible ? t('layers.hide') : t('layers.show'),
 					onClick: event => {
 						event.stopPropagation();
 						this.commands.toggleVisible(layer.id);
@@ -124,7 +128,7 @@ export class LayersView {
 				'button',
 				{
 					class: 'row-btn danger',
-					title: 'Excluir',
+					title: t('layers.delete'),
 					onClick: event => {
 						event.stopPropagation();
 						this.commands.remove({ kind: 'layer', id: layer.id });
@@ -147,12 +151,12 @@ export class LayersView {
 				onClick: () => this.store.select('audio', clip.id)
 			},
 			h('span', { class: 'type-icon' }, fa('music')),
-			h('span', { class: 'name', title: clip.path }, clip.name || '(sem nome)'),
+			h('span', { class: 'name', title: clip.path }, clip.name || t('common.unnamed')),
 			h(
 				'button',
 				{
 					class: 'row-btn',
-					title: clip.muted ? 'Ativar som' : 'Silenciar',
+					title: clip.muted ? t('layers.unmute') : t('layers.mute'),
 					onClick: event => {
 						event.stopPropagation();
 						this.commands.toggleMute(clip.id);
@@ -164,7 +168,7 @@ export class LayersView {
 				'button',
 				{
 					class: 'row-btn danger',
-					title: 'Excluir',
+					title: t('layers.delete'),
 					onClick: event => {
 						event.stopPropagation();
 						this.commands.remove({ kind: 'audio', id: clip.id });

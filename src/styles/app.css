@@ -1314,6 +1314,40 @@ button {
 	user-select: text;
 }
 
+/* Language */
+
+.language-list {
+	display: flex;
+	flex-direction: column;
+	gap: 6px;
+}
+
+.language-option {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	height: 38px;
+	padding: 0 14px;
+	border-radius: 6px;
+	border: 1px solid rgba(50, 47, 53, 0.2);
+	background: rgba(255, 255, 255, 0.6);
+	color: var(--coal);
+	font-size: 13px;
+	text-align: left;
+}
+
+.language-option:hover {
+	background: #fff;
+	border-color: var(--brass-deep);
+}
+
+.language-option.active {
+	background: var(--plate);
+	color: var(--brass-bright);
+	border-color: var(--coal);
+	font-weight: bold;
+}
+
 /* About */
 
 .about-header {

@@ -9,6 +9,7 @@
  */
 
 import { h, fa, panelTitle } from './dom.js';
+import { t } from '../i18n/index.js';
 
 const modalRoot = () => document.getElementById('modal-root');
 
@@ -41,7 +42,7 @@ export function openModal({ icon, title, body, footer = [], wide = false, dismis
 		}
 	};
 
-	const closeButton = h('button', { class: 'row-btn', title: 'Fechar', style: { color: 'var(--brass-dim)' }, onClick: tryDismiss }, fa('xmark'));
+	const closeButton = h('button', { class: 'row-btn', title: t('common.close'), style: { color: 'var(--brass-dim)' }, onClick: tryDismiss }, fa('xmark'));
 
 	const element = h(
 		'div',
@@ -71,7 +72,7 @@ export function openModal({ icon, title, body, footer = [], wide = false, dismis
 }
 
 /** Ask a yes/no question. Resolves true when the confirm button is used. */
-export function confirmDialog({ title, message, confirm = 'Confirmar', cancel = 'Cancelar', danger = false, icon = 'circle-question' }) {
+export function confirmDialog({ title, message, confirm = t('common.confirm'), cancel = t('common.cancel'), danger = false, icon = 'circle-question' }) {
 	return new Promise(resolve => {
 		let answer = false;
 

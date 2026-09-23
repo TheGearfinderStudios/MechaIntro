@@ -12,6 +12,7 @@
 import { h, fa, svg, iconButton, dragGesture } from './dom.js';
 import { drawScene, hitTest, layerCorners, layerSize } from '../render/scene.js';
 import { formatTime } from '../core/project.js';
+import { t } from '../i18n/index.js';
 
 // How close (in screen pixels) a dragged layer's centre gets to a centre line before it snaps.
 const SNAP_SCREEN_PX = 10;
@@ -30,11 +31,12 @@ export class StageView {
 		this.frame = h('div', { class: 'stage-frame' }, this.canvas, this.overlay);
 		this.viewport = h('div', { class: 'stage-viewport' }, this.frame);
 
-		this.playButton = iconButton('play', 'Tocar (Espaço)', () => player.toggle(), { class: 'icon-btn play-btn' });
-		this.loopButton = iconButton('repeat', 'Repetir', () => {
+		this.playButton = iconButton('play', t('stage.play'), () => player.toggle(), { class: 'icon-btn play-btn' });
+		this.loopButton = iconButton('repeat', t('stage.loop'), () => {
 			player.loop = !player.loop;
 			this.loopButton.classList.toggle('active', player.loop);
 		});
+		this.loopButton.classList.toggle('active', player.loop);
 		this.timeCurrent = h('span');
 		this.timeTotal = h('span', { class: 'total' });
 		this.meta = h('span', { class: 'meta' });
@@ -42,9 +44,9 @@ export class StageView {
 		const transport = h(
 			'div',
 			{ class: 'transport' },
-			iconButton('backward-step', 'Voltar ao início (Home)', () => player.seek(0)),
+			iconButton('backward-step', t('stage.toStart'), () => player.seek(0)),
 			this.playButton,
-			iconButton('forward-step', 'Ir para o fim (End)', () => player.seek(store.project.settings.duration)),
+			iconButton('forward-step', t('stage.toEnd'), () => player.seek(store.project.settings.duration)),
 			h('span', { class: 'time' }, this.timeCurrent, ' / ', this.timeTotal),
 			this.loopButton,
 			this.meta
@@ -55,18 +57,27 @@ export class StageView {
 		this.overlay.addEventListener('pointerdown', event => this._onPointerDown(event));
 		// Deferred a frame: resizing the frame inside the observer callback would
 		// re-trigger layout in the same pass ("ResizeObserver loop" warnings).
-		new ResizeObserver(() => requestAnimationFrame(() => this._fit())).observe(this.viewport);
+		const resize = new ResizeObserver(() => requestAnimationFrame(() => this._fit()));
+		resize.observe(this.viewport);
 
-		store.on('project', () => {
-			this._fit();
-			this.invalidate();
-		});
-		store.on('time', () => this.invalidate());
-		store.on('selection', () => this.invalidate());
-		store.on('meta', () => this._syncTransport());
+		this._off = [
+			() => resize.disconnect(),
+			store.on('project', () => {
+				this._fit();
+				this.invalidate();
+			}),
+			store.on('time', () => this.invalidate()),
+			store.on('selection', () => this.invalidate()),
+			store.on('meta', () => this._syncTransport())
+		];
 
 		this._fit();
+		this._syncTransport();
 		this.invalidate();
+	}
+
+	destroy() {
+		this._off.forEach(off => off());
 	}
 
 	invalidate() {
@@ -156,7 +167,7 @@ export class StageView {
 	_syncTransport() {
 		const playing = this.store.playing;
 		this.playButton.replaceChildren(fa(playing ? 'pause' : 'play'));
-		this.playButton.title = playing ? 'Pausar (Espaço)' : 'Tocar (Espaço)';
+		this.playButton.title = playing ? t('stage.pause') : t('stage.play');
 	}
 
 	/** Screen point -> canvas pixels. */

@@ -11,43 +11,20 @@
  * @license GPL-3.0-or-later
  */
 
+import { t } from '../i18n/index.js';
+
 export const FORMAT_VERSION = 1;
 export const FILE_EXTENSION = 'mintro';
 
-export const RESOLUTIONS = [
-	['1920x1080', '1920 × 1080 (Full HD)'],
-	['1280x720', '1280 × 720 (HD)'],
-	['2560x1440', '2560 × 1440 (QHD)'],
-	['3840x2160', '3840 × 2160 (4K)'],
-	['1080x1920', '1080 × 1920 (vertical)'],
-	['1080x1080', '1080 × 1080 (quadrado)']
-];
+// Option lists are [value, i18n key]; the UI translates the labels.
 
-export const FPS_OPTIONS = [
-	['24', '24 fps'],
-	['30', '30 fps'],
-	['60', '60 fps']
-];
+export const RESOLUTIONS = ['1920x1080', '1280x720', '2560x1440', '3840x2160', '1080x1920', '1080x1080'].map(value => [value, `resolution.${value}`]);
 
-export const BACKGROUND_TYPES = [
-	['solid', 'Cor sólida'],
-	['linear', 'Gradiente linear'],
-	['radial', 'Gradiente radial'],
-	['image', 'Imagem'],
-	['transparent', 'Transparente']
-];
+export const FPS_OPTIONS = ['24', '30', '60'].map(value => [value, `fps.${value}`]);
 
-export const FONT_OPTIONS = [
-	['Arial', 'Arial'],
-	['Segoe UI', 'Segoe UI'],
-	['Georgia', 'Georgia'],
-	['Times New Roman', 'Times New Roman'],
-	['Trebuchet MS', 'Trebuchet MS'],
-	['Verdana', 'Verdana'],
-	['Impact', 'Impact'],
-	['Consolas', 'Consolas'],
-	['Courier New', 'Courier New']
-];
+export const BACKGROUND_TYPES = ['solid', 'linear', 'radial', 'image', 'transparent'].map(value => [value, `background.${value}`]);
+
+export const FONT_OPTIONS = ['Arial', 'Segoe UI', 'Georgia', 'Times New Roman', 'Trebuchet MS', 'Verdana', 'Impact', 'Consolas', 'Courier New'];
 
 export const MIN_DURATION = 0.1;
 
@@ -80,7 +57,7 @@ function baseLayer(type, project, overrides) {
 
 export function createIconLayer(project, overrides = {}) {
 	return baseLayer('icon', project, {
-		name: 'Ícone',
+		name: t('default.icon'),
 		icon: { name: 'gear', style: 'solid' },
 		size: Math.round(project.settings.height * 0.25),
 		...overrides
@@ -89,8 +66,8 @@ export function createIconLayer(project, overrides = {}) {
 
 export function createTextLayer(project, overrides = {}) {
 	return baseLayer('text', project, {
-		name: 'Texto',
-		text: 'Novo texto',
+		name: t('default.text'),
+		text: t('default.textContent'),
 		font: 'Georgia',
 		size: Math.round(project.settings.height * 0.08),
 		weight: 700,
@@ -102,7 +79,7 @@ export function createTextLayer(project, overrides = {}) {
 
 export function createImageLayer(project, path, overrides = {}) {
 	return baseLayer('image', project, {
-		name: fileName(path) || 'Imagem',
+		name: fileName(path) || t('default.image'),
 		path,
 		width: Math.round(project.settings.width * 0.3),
 		color: undefined,
@@ -115,7 +92,7 @@ export function createAudioClip(project, path, sourceDuration, overrides = {}) {
 
 	return {
 		id: uid('audio'),
-		name: fileName(path) || 'Áudio',
+		name: fileName(path) || t('default.audio'),
 		path,
 		sourceDuration,
 		start: 0,
@@ -140,7 +117,7 @@ export function fileName(path) {
 export function createProject() {
 	const project = {
 		version: FORMAT_VERSION,
-		name: 'Nova intro',
+		name: t('default.project'),
 		settings: { width: 1920, height: 1080, fps: 60, duration: 5 },
 		background: {
 			type: 'radial',
@@ -159,7 +136,7 @@ export function createProject() {
 
 	project.layers.push(
 		createIconLayer(project, {
-			name: 'Engrenagem',
+			name: t('default.gear'),
 			y: 460,
 			size: 300,
 			shadow: { color: '#000000', blur: 30 },
@@ -167,7 +144,7 @@ export function createProject() {
 			motion: { type: 'rotate', speed: 0.08, amount: 0.5 }
 		}),
 		createTextLayer(project, {
-			name: 'Título',
+			name: t('default.title'),
 			text: 'The Gearfinder Society',
 			y: 760,
 			size: 96,

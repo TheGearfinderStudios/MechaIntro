@@ -12,6 +12,8 @@
  * @license GPL-3.0-or-later
  */
 
+import { t } from '../i18n/index.js';
+
 export const SAMPLE_RATE = 48000;
 
 const WAVEFORM_BUCKETS = 1600;
@@ -71,7 +73,7 @@ export class Assets {
 
 		const failed = paths.filter(path => !this._images.get(path).bitmap);
 		if (failed.length) {
-			throw new Error(`Não foi possível carregar: ${failed.join(', ')}`);
+			throw new Error(t('error.loadAssets', { paths: failed.join(', ') }));
 		}
 	}
 

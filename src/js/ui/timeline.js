@@ -13,6 +13,7 @@
 import { h, fa, svg, panelTitle, dragGesture } from './dom.js';
 import { MIN_DURATION, formatTime } from '../core/project.js';
 import { TYPE_ICONS } from './layers.js';
+import { t } from '../i18n/index.js';
 
 const HEAD_WIDTH = 190;
 const TAIL = 160;
@@ -30,7 +31,7 @@ export class TimelineView {
 		this.snap = true;
 
 		this.zoomLabel = h('span', { class: 'zoom-label' });
-		this.snapButton = h('button', { class: 'icon-btn active', title: 'Ímã: encaixar nas bordas e no cursor (segure Alt para ignorar)', onClick: () => this._toggleSnap() }, fa('magnet'));
+		this.snapButton = h('button', { class: 'icon-btn active', title: t('timeline.snap'), onClick: () => this._toggleSnap() }, fa('magnet'));
 
 		this.content = h('div', { class: 'tl-content' });
 		this.scroll = h('div', { class: 'tl-scroll', 'data-scrollbar': 'css' }, this.content);
@@ -40,11 +41,11 @@ export class TimelineView {
 		root.append(
 			panelTitle(
 				'timeline',
-				'Linha do tempo',
-				h('button', { class: 'icon-btn', title: 'Diminuir zoom', onClick: () => this._zoom(1 / 1.4) }, fa('magnifying-glass-minus')),
+				t('timeline.title'),
+				h('button', { class: 'icon-btn', title: t('timeline.zoomOut'), onClick: () => this._zoom(1 / 1.4) }, fa('magnifying-glass-minus')),
 				this.zoomLabel,
-				h('button', { class: 'icon-btn', title: 'Aumentar zoom', onClick: () => this._zoom(1.4) }, fa('magnifying-glass-plus')),
-				h('button', { class: 'icon-btn', title: 'Ajustar à largura', onClick: () => this._fit() }, fa('left-right')),
+				h('button', { class: 'icon-btn', title: t('timeline.zoomIn'), onClick: () => this._zoom(1.4) }, fa('magnifying-glass-plus')),
+				h('button', { class: 'icon-btn', title: t('timeline.fit'), onClick: () => this._fit() }, fa('left-right')),
 				this.snapButton
 			),
 			this.scroll
@@ -61,19 +62,27 @@ export class TimelineView {
 			{ passive: false }
 		);
 
-		new ResizeObserver(() =>
+		const resize = new ResizeObserver(() =>
 			requestAnimationFrame(() => {
 				if (this.pps === null) {
 					this.render();
 				}
 			})
-		).observe(this.scroll);
+		);
+		resize.observe(this.scroll);
 
-		store.on('project', () => this.render());
-		store.on('selection', () => this.render());
-		store.on('time', () => this._placePlayhead(true));
+		this._off = [
+			() => resize.disconnect(),
+			store.on('project', () => this.render()),
+			store.on('selection', () => this.render()),
+			store.on('time', () => this._placePlayhead(true))
+		];
 
 		this.render();
+	}
+
+	destroy() {
+		this._off.forEach(off => off());
 	}
 
 	get pixelsPerSecond() {
@@ -124,18 +133,18 @@ export class TimelineView {
 
 		const rows = [this._ruler(laneWidth)];
 
-		rows.push(this._groupRow('Visual', laneWidth));
+		rows.push(this._groupRow(t('layers.visual'), laneWidth));
 		for (const layer of [...project.layers].reverse()) {
 			rows.push(this._layerRow(layer, selection, laneWidth));
 		}
 
-		rows.push(this._groupRow('Áudio', laneWidth));
+		rows.push(this._groupRow(t('layers.audio'), laneWidth));
 		for (const clip of project.audio) {
 			rows.push(this._audioRow(clip, selection, laneWidth));
 		}
 
 		if (!project.layers.length && !project.audio.length) {
-			rows.push(h('div', { class: 'tl-empty' }, 'Adicione ícones, textos, imagens ou sons pelo painel de camadas.'));
+			rows.push(h('div', { class: 'tl-empty' }, t('timeline.empty')));
 		}
 
 		this.content.replaceChildren(...rows, this.playhead);
@@ -184,7 +193,7 @@ export class TimelineView {
 		const lane = h('div', { class: 'tl-lane', style: { width: `${laneWidth}px` } }, ...ticks, this._pastEnd(laneWidth), this.cap);
 		lane.addEventListener('pointerdown', event => this._scrub(event, lane));
 
-		return h('div', { class: 'tl-row ruler' }, h('div', { class: 'tl-head' }, 'Tempo'), lane);
+		return h('div', { class: 'tl-row ruler' }, h('div', { class: 'tl-head' }, t('timeline.time')), lane);
 	}
 
 	_groupRow(label, laneWidth) {
@@ -203,7 +212,7 @@ export class TimelineView {
 	}
 
 	_head(icon, name, selected, onSelect, toggle) {
-		return h('div', { class: 'tl-head', title: name, onClick: onSelect }, h('span', { class: 'type-icon' }, icon), h('span', { class: 'name' }, name || '(sem nome)'), toggle);
+		return h('div', { class: 'tl-head', title: name, onClick: onSelect }, h('span', { class: 'type-icon' }, icon), h('span', { class: 'name' }, name || t('common.unnamed')), toggle);
 	}
 
 	_toggleButton(icon, title, onClick) {
@@ -237,7 +246,7 @@ export class TimelineView {
 			},
 			h('div', { class: 'anim-in', style: { width: `${inDuration * pps}px` } }),
 			h('div', { class: 'anim-out', style: { width: `${outDuration * pps}px` } }),
-			h('div', { class: 'clip-label' }, fa(TYPE_ICONS[layer.type]), layer.name || '(sem nome)'),
+			h('div', { class: 'clip-label' }, fa(TYPE_ICONS[layer.type]), layer.name || t('common.unnamed')),
 			h('div', { class: 'tl-handle left', dataset: { edge: 'start' } }),
 			h('div', { class: 'tl-handle right', dataset: { edge: 'end' } })
 		);
@@ -255,7 +264,7 @@ export class TimelineView {
 				layer.name,
 				selected,
 				() => this.store.select('layer', layer.id),
-				this._toggleButton(layer.visible ? 'eye' : 'eye-slash', layer.visible ? 'Ocultar' : 'Mostrar', () =>
+				this._toggleButton(layer.visible ? 'eye' : 'eye-slash', layer.visible ? t('layers.hide') : t('layers.show'), () =>
 					this.store.update(project => {
 						const target = project.layers.find(item => item.id === layer.id);
 						if (target) {
@@ -295,8 +304,8 @@ export class TimelineView {
 			h('div', { class: 'clip-label' }, fa(clip.muted ? 'volume-xmark' : 'music'), `${clip.name} · ${Math.round(clip.volume * 100)}%`),
 			h('div', { class: 'tl-handle left', dataset: { edge: 'start' } }),
 			h('div', { class: 'tl-handle right', dataset: { edge: 'end' } }),
-			h('div', { class: 'tl-fade-handle', title: 'Fade in', dataset: { fade: 'in' }, style: { left: `${fadeIn * pps}px` } }),
-			h('div', { class: 'tl-fade-handle', title: 'Fade out', dataset: { fade: 'out' }, style: { left: `${width - fadeOut * pps}px` } })
+			h('div', { class: 'tl-fade-handle', title: t('timeline.fadeIn'), dataset: { fade: 'in' }, style: { left: `${fadeIn * pps}px` } }),
+			h('div', { class: 'tl-fade-handle', title: t('timeline.fadeOut'), dataset: { fade: 'out' }, style: { left: `${width - fadeOut * pps}px` } })
 		);
 
 		bar.addEventListener('pointerdown', event => this._dragAudio(event, clip));
@@ -312,7 +321,7 @@ export class TimelineView {
 				clip.name,
 				selected,
 				() => this.store.select('audio', clip.id),
-				this._toggleButton(clip.muted ? 'volume-xmark' : 'volume-high', clip.muted ? 'Ativar som' : 'Silenciar', () =>
+				this._toggleButton(clip.muted ? 'volume-xmark' : 'volume-high', clip.muted ? t('layers.unmute') : t('layers.mute'), () =>
 					this.store.update(project => {
 						const target = project.audio.find(item => item.id === clip.id);
 						if (target) {

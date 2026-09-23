@@ -11,11 +11,12 @@
 
 import { h, fa } from './dom.js';
 import { openModal } from './modal.js';
+import { t } from '../i18n/index.js';
 
 const COPYRIGHT = 'Copyright (C) 2026 The Gearfinder Studios';
 
-// The notice text the GPL itself recommends (see "How to Apply These Terms"), kept in
-// English because it is the legal wording.
+// The notice text the GPL itself recommends (see "How to Apply These Terms"). It is
+// the legal wording, so it stays in English whatever the interface language.
 const NOTICE = [
 	'This program is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.',
 	'This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.'
@@ -23,10 +24,10 @@ const NOTICE = [
 
 export async function openAbout() {
 	const info = await window.mecha.about();
-	const text = h('pre', { class: 'license-text', 'data-scrollbar': 'css' });
+	const text = h('pre', { class: 'license-text hidden', 'data-scrollbar': 'css' });
 
 	const show = (button, content) => {
-		text.textContent = content || 'Arquivo não encontrado.';
+		text.textContent = content || t('about.missing');
 		text.classList.remove('hidden');
 		tabs.querySelectorAll('button').forEach(item => item.classList.toggle('active', item === button));
 	};
@@ -34,15 +35,13 @@ export async function openAbout() {
 	const tabs = h(
 		'div',
 		{ class: 'segmented' },
-		h('button', { onClick: event => show(event.currentTarget, info.license) }, 'Licença (GPL-3.0)'),
-		h('button', { onClick: event => show(event.currentTarget, info.notices) }, 'Componentes de terceiros')
+		h('button', { onClick: event => show(event.currentTarget, info.license) }, t('about.license')),
+		h('button', { onClick: event => show(event.currentTarget, info.notices) }, t('about.thirdParty'))
 	);
-
-	text.classList.add('hidden');
 
 	const modal = openModal({
 		icon: 'circle-info',
-		title: 'Sobre o MechaIntro',
+		title: t('about.title'),
 		body: h(
 			'div',
 			{ class: 'page about', 'data-scrollbar': 'css' },
@@ -50,9 +49,9 @@ export async function openAbout() {
 				'div',
 				{ class: 'about-header' },
 				h('img', { src: '../build/icon.png', alt: '' }),
-				h('div', null, h('h2', null, info.name), h('span', null, `Versão ${info.version}`), h('span', null, COPYRIGHT))
+				h('div', null, h('h2', null, info.name), h('span', null, t('about.version', { version: info.version })), h('span', null, COPYRIGHT))
 			),
-			h('p', { class: 'modal-message' }, 'Software livre, distribuído sob a GNU General Public License, versão 3 ou posterior. Você pode usar, estudar, modificar e redistribuir, desde que mantenha a mesma licença.'),
+			h('p', { class: 'modal-message' }, t('about.summary')),
 			...NOTICE.map(paragraph => h('p', { class: 'legal' }, paragraph)),
 			h(
 				'p',
@@ -64,7 +63,6 @@ export async function openAbout() {
 			tabs,
 			text
 		),
-		footer: [h('button', { class: 'btn primary', onClick: () => modal.close() }, fa('check'), 'Fechar')],
-		wide: false
+		footer: [h('button', { class: 'btn primary', onClick: () => modal.close() }, fa('check'), t('common.close'))]
 	});
 }

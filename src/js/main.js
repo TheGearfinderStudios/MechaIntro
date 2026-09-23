@@ -19,6 +19,7 @@ import { LayersView } from './ui/layers.js';
 import { StageView } from './ui/stage.js';
 import { InspectorView } from './ui/inspector.js';
 import { TimelineView } from './ui/timeline.js';
+import { locale, setLocale } from './i18n/index.js';
 
 const store = new Store(createProject());
 
@@ -38,18 +39,41 @@ const assets = new Assets(() => {
 
 const player = new Player(store, assets);
 const commands = createCommands({ store, assets, player });
-const context = { store, assets, player, commands };
-
-// Handle for the devtools console (`__app.store.project`) and the smoke run.
-window.__app = context;
+const context = { store, assets, player, commands, changeLocale };
 
 const $ = id => document.getElementById(id);
 
-new TitlebarView($('titlebar'), context);
-new LayersView($('layers-panel'), context);
-stage = new StageView($('stage-area'), context);
-inspector = new InspectorView($('inspector-panel'), context);
-timeline = new TimelineView($('timeline-panel'), context);
+let views = [];
+
+/**
+ * Build (or rebuild) every view. Views read their text when they are built, so a
+ * language change tears them down and mounts them again; the store, the player
+ * and the asset cache carry on untouched, and with them the open project and
+ * its undo history.
+ */
+function mount() {
+	for (const view of views) {
+		view.destroy();
+	}
+	for (const id of ['titlebar', 'layers-panel', 'stage-area', 'inspector-panel', 'timeline-panel']) {
+		$(id).replaceChildren();
+	}
+
+	stage = new StageView($('stage-area'), context);
+	inspector = new InspectorView($('inspector-panel'), context);
+	timeline = new TimelineView($('timeline-panel'), context);
+	views = [new TitlebarView($('titlebar'), context), new LayersView($('layers-panel'), context), stage, inspector, timeline];
+
+	document.documentElement.lang = locale();
+	window.mecha.setLocale(locale());
+}
+
+function changeLocale(code) {
+	setLocale(code);
+	mount();
+}
+
+mount();
 
 // ── Timeline splitter ─────────────────────────────────────────────────────
 

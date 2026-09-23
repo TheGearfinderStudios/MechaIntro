@@ -18,32 +18,16 @@ import { ANIMATIONS, MOTIONS } from '../core/animation.js';
 import { EASING_OPTIONS } from '../core/easing.js';
 import { ICON_STYLES, iconLabel, iconStyles } from '../core/icons.js';
 import { BACKGROUND_TYPES, FONT_OPTIONS, FPS_OPTIONS, MIN_DURATION, RESOLUTIONS, resizeProject, setDuration, formatTime } from '../core/project.js';
+import { t, options } from '../i18n/index.js';
 import { pickIcon } from './iconPicker.js';
 import { TYPE_ICONS } from './layers.js';
 
 const SOURCE = 'inspector';
 
-const WEIGHTS = [
-	['300', 'Leve'],
-	['400', 'Normal'],
-	['600', 'Semi-negrito'],
-	['700', 'Negrito'],
-	['900', 'Black']
-];
-
-const ALIGNS = [
-	['left', 'Esquerda'],
-	['center', 'Centro'],
-	['right', 'Direita']
-];
-
-const FITS = [
-	['cover', 'Preencher'],
-	['contain', 'Conter'],
-	['stretch', 'Esticar']
-];
-
-const TYPE_NAMES = { icon: 'Ícone', text: 'Texto', image: 'Imagem', audio: 'Áudio' };
+/** [value, i18n key] */
+const WEIGHTS = ['300', '400', '600', '700', '900'].map(value => [value, `weight.${value}`]);
+const ALIGNS = ['left', 'center', 'right'].map(value => [value, `align.${value}`]);
+const FITS = ['cover', 'contain', 'stretch'].map(value => [value, `fit.${value}`]);
 
 const percent = value => `${Math.round(value * 100)}%`;
 
@@ -53,18 +37,24 @@ export class InspectorView {
 		this.assets = assets;
 		this.commands = commands;
 
-		this.title = panelTitle('sliders', 'Propriedades');
+		this.title = panelTitle('sliders', t('inspector.title'));
 		this.body = h('div', { class: 'page', 'data-scrollbar': 'css' });
 		root.append(this.title, this.body);
 
-		store.on('selection', () => this.render(true));
-		store.on('project', ({ source }) => {
-			if (source !== SOURCE) {
-				this.render();
-			}
-		});
+		this._off = [
+			store.on('selection', () => this.render(true)),
+			store.on('project', ({ source }) => {
+				if (source !== SOURCE) {
+					this.render();
+				}
+			})
+		];
 
 		this.render(true);
+	}
+
+	destroy() {
+		this._off.forEach(off => off());
 	}
 
 	/** Edit the project; `rebuild` for changes that alter which fields are shown. */
@@ -99,16 +89,16 @@ export class InspectorView {
 		const { selection } = this.store;
 		const target = this.store.find();
 		let content;
-		let title = 'Projeto e fundo';
+		let title = t('layers.projectAndBackground');
 		let icon = TYPE_ICONS.background;
 
 		if (target && selection.kind === 'layer') {
 			content = this._layer(target);
-			title = `${TYPE_NAMES[target.type]} · ${target.name || 'sem nome'}`;
+			title = `${t(`type.${target.type}`)} · ${target.name || t('common.unnamed')}`;
 			icon = TYPE_ICONS[target.type];
 		} else if (target && selection.kind === 'audio') {
 			content = this._audio(target);
-			title = `Áudio · ${target.name || 'sem nome'}`;
+			title = `${t('type.audio')} · ${target.name || t('common.unnamed')}`;
 			icon = TYPE_ICONS.audio;
 		} else {
 			content = this._project();
@@ -125,17 +115,16 @@ export class InspectorView {
 		const { project } = this.store;
 		const { settings, background } = project;
 		const resolution = `${settings.width}x${settings.height}`;
-		const resolutions = RESOLUTIONS.some(([value]) => value === resolution)
-			? RESOLUTIONS
-			: [[resolution, `${settings.width} × ${settings.height}`], ...RESOLUTIONS];
+		const known = RESOLUTIONS.some(([value]) => value === resolution);
+		const resolutions = [...(known ? [] : [[resolution, `${settings.width} × ${settings.height}`]]), ...options(RESOLUTIONS)];
 
 		return [
 			section(
 				'film',
-				'Projeto',
-				textField('Nome', project.name, this._set('name', (p, v) => (p.name = v))),
+				t('inspector.project'),
+				textField(t('inspector.name'), project.name, this._set('name', (p, v) => (p.name = v))),
 				selectField(
-					'Resolução',
+					t('inspector.resolution'),
 					resolution,
 					resolutions,
 					this._set(
@@ -148,9 +137,9 @@ export class InspectorView {
 					)
 				),
 				row(
-					selectField('Quadros por segundo', settings.fps, FPS_OPTIONS, this._set('fps', (p, v) => (p.settings.fps = Number(v)))),
+					selectField(t('inspector.fps'), settings.fps, options(FPS_OPTIONS), this._set('fps', (p, v) => (p.settings.fps = Number(v)))),
 					numberField(
-						'Duração',
+						t('inspector.duration'),
 						settings.duration,
 						this._set('duration', (p, v) => setDuration(p, v), true),
 						// Only on commit: typing "12" would otherwise pass through "1" and cut
@@ -161,8 +150,8 @@ export class InspectorView {
 			),
 			section(
 				'fill-drip',
-				'Fundo',
-				selectField('Tipo', background.type, BACKGROUND_TYPES, this._set('bg-type', (p, v) => (p.background.type = v), true)),
+				t('inspector.background'),
+				selectField(t('inspector.type'), background.type, options(BACKGROUND_TYPES), this._set('bg-type', (p, v) => (p.background.type = v), true)),
 				...this._backgroundFields(background)
 			)
 		];
@@ -170,39 +159,47 @@ export class InspectorView {
 
 	_backgroundFields(background) {
 		const bg = key => this._set(`bg-${key}`, (p, v) => (p.background[key] = v));
-		const vignette = rangeField('Vinheta', background.vignette, bg('vignette'), { max: 1, format: percent });
+		const vignette = rangeField(t('inspector.vignette'), background.vignette, bg('vignette'), { max: 1, format: percent });
 
 		switch (background.type) {
 			case 'solid':
-				return [colorField('Cor', background.color, bg('color')), vignette];
+				return [colorField(t('inspector.color'), background.color, bg('color')), vignette];
 
 			case 'linear':
-			case 'radial':
+			case 'radial': {
+				const radial = background.type === 'radial';
 				return [
-					row(colorField(background.type === 'radial' ? 'Centro' : 'Início', background.from, bg('from')), colorField(background.type === 'radial' ? 'Borda' : 'Fim', background.to, bg('to'))),
-					background.type === 'linear' ? rangeField('Ângulo', background.angle, bg('angle'), { min: 0, max: 360, step: 1, format: v => `${v}°` }) : null,
+					row(
+						colorField(radial ? t('inspector.gradientCentre') : t('inspector.gradientStart'), background.from, bg('from')),
+						colorField(radial ? t('inspector.gradientEdge') : t('inspector.gradientEnd'), background.to, bg('to'))
+					),
+					radial ? null : rangeField(t('inspector.angle'), background.angle, bg('angle'), { min: 0, max: 360, step: 1, format: v => `${v}°` }),
 					vignette
 				];
+			}
 
 			case 'image': {
 				const error = background.image ? this.assets.imageError(background.image) : null;
 
 				return [
-					this._fileChoice(background.image, 'Escolher imagem', async () => {
+					this._fileChoice(background.image, t('inspector.chooseImage'), async () => {
 						const path = await window.mecha.pickAsset('image');
 						if (path) {
 							this._set('bg-image', p => (p.background.image = path), true)();
 						}
 					}),
-					error ? hint(`Não foi possível abrir a imagem: ${error}`, true) : null,
-					row(selectField('Ajuste', background.imageFit, FITS, bg('imageFit')), colorField('Cor por trás', background.color, bg('color'))),
-					rangeField('Escurecer', background.imageDim, bg('imageDim'), { max: 1, format: percent }),
+					error ? hint(t('inspector.imageError', { error }), true) : null,
+					row(
+						selectField(t('inspector.fit'), background.imageFit, options(FITS), bg('imageFit')),
+						colorField(t('inspector.colorBehind'), background.color, bg('color'))
+					),
+					rangeField(t('inspector.dim'), background.imageDim, bg('imageDim'), { max: 1, format: percent }),
 					vignette
 				];
 			}
 
 			case 'transparent':
-				return [hint('O fundo fica vazio. Exporte em WebM para manter a transparência; o MP4 não tem canal alfa e sai com fundo preto.')];
+				return [hint(t('inspector.transparentHint'))];
 		}
 
 		return [];
@@ -216,18 +213,18 @@ export class InspectorView {
 		const { duration } = this.store.project.settings;
 
 		return [
-			section('tag', 'Camada', textField('Nome', layer.name, set('name'))),
+			section('tag', t('inspector.layer'), textField(t('inspector.name'), layer.name, set('name'))),
 			section(
 				'clock',
-				'Tempo',
+				t('inspector.timing'),
 				row(
-					numberField('Aparece em', layer.start, this._setTarget('start', (t, v) => (t.start = Math.min(v, t.end - MIN_DURATION))), {
+					numberField(t('inspector.appearsAt'), layer.start, this._setTarget('start', (target, v) => (target.start = Math.min(v, target.end - MIN_DURATION))), {
 						min: 0,
 						max: duration,
 						step: 0.1,
 						unit: 's'
 					}),
-					numberField('Some em', layer.end, this._setTarget('end', (t, v) => (t.end = Math.max(v, t.start + MIN_DURATION))), {
+					numberField(t('inspector.leavesAt'), layer.end, this._setTarget('end', (target, v) => (target.end = Math.max(v, target.start + MIN_DURATION))), {
 						min: 0,
 						max: duration,
 						step: 0.1,
@@ -238,35 +235,30 @@ export class InspectorView {
 			this._content(layer, set),
 			section(
 				'up-down-left-right',
-				'Transformação',
+				t('inspector.transform'),
 				row(numberField('X', layer.x, set('x'), { step: 1, unit: 'px', precision: 0 }), numberField('Y', layer.y, set('y'), { step: 1, unit: 'px', precision: 0 })),
 				row(
-					numberField('Rotação', layer.rotation, set('rotation'), { min: -360, max: 360, step: 1, unit: '°', precision: 1 }),
+					numberField(t('inspector.rotation'), layer.rotation, set('rotation'), { min: -360, max: 360, step: 1, unit: '°', precision: 1 }),
 					h(
 						'div',
 						{ class: 'field' },
-						h('span', { class: 'field-label' }, 'Centralizar'),
-						h(
-							'button',
-							{ class: 'btn', onClick: () => this.commands.centerLayer(layer.id) },
-							fa('crosshairs'),
-							'No quadro'
-						)
+						h('span', { class: 'field-label' }, t('inspector.centre')),
+						h('button', { class: 'btn', onClick: () => this.commands.centerLayer(layer.id) }, fa('crosshairs'), t('inspector.centreInFrame'))
 					)
 				),
-				rangeField('Opacidade', layer.opacity, set('opacity'), { max: 1, format: percent })
+				rangeField(t('inspector.opacity'), layer.opacity, set('opacity'), { max: 1, format: percent })
 			),
 			section(
 				'sun',
-				'Sombra / brilho',
+				t('inspector.shadow'),
 				row(
-					colorField('Cor', layer.shadow.color, nested('shadow', 'color')),
-					rangeField('Intensidade', layer.shadow.blur, nested('shadow', 'blur'), { min: 0, max: 120, step: 1, format: v => `${v}px` })
+					colorField(t('inspector.color'), layer.shadow.color, nested('shadow', 'color')),
+					rangeField(t('inspector.intensity'), layer.shadow.blur, nested('shadow', 'blur'), { min: 0, max: 120, step: 1, format: v => `${v}px` })
 				),
-				hint('Sombra preta para destacar do fundo; use a cor do próprio elemento para um brilho.')
+				hint(t('inspector.shadowHint'))
 			),
-			this._animation('right-to-bracket', 'Entrada', layer.animIn, 'animIn'),
-			this._animation('right-from-bracket', 'Saída', layer.animOut, 'animOut'),
+			this._animation('right-to-bracket', t('inspector.entrance'), layer.animIn, 'animIn'),
+			this._animation('right-from-bracket', t('inspector.exit'), layer.animOut, 'animOut'),
 			this._motion(layer)
 		];
 	}
@@ -279,7 +271,7 @@ export class InspectorView {
 
 				return section(
 					'icons',
-					'Ícone',
+					t('type.icon'),
 					h(
 						'button',
 						{
@@ -292,33 +284,39 @@ export class InspectorView {
 							}
 						},
 						h('span', { class: 'preview' }, fa(layer.icon.name, layer.icon.style)),
-						h('span', { class: 'meta' }, h('strong', null, iconLabel(layer.icon.name)), h('span', null, `${layer.icon.name} · clique para trocar`))
+						h('span', { class: 'meta' }, h('strong', null, iconLabel(layer.icon.name)), h('span', null, t('inspector.iconChange', { name: layer.icon.name })))
 					),
 					h('div', { style: { height: '8px' } }),
 					styleOptions.length > 1
-						? selectField('Estilo', layer.icon.style, styleOptions, this._setTarget('icon.style', (t, v) => (t.icon = { ...t.icon, style: v }), true))
+						? selectField(t('inspector.iconStyle'), layer.icon.style, styleOptions, this._setTarget('icon.style', (target, v) => (target.icon = { ...target.icon, style: v }), true))
 						: null,
-					row(numberField('Tamanho', layer.size, set('size'), { min: 1, max: 4000, step: 1, unit: 'px', precision: 0 }), colorField('Cor', layer.color, set('color')))
+					row(
+						numberField(t('inspector.size'), layer.size, set('size'), { min: 1, max: 4000, step: 1, unit: 'px', precision: 0 }),
+						colorField(t('inspector.color'), layer.color, set('color'))
+					)
 				);
 			}
 
 			case 'text': {
-				const fonts = h('datalist', { id: 'font-list' }, FONT_OPTIONS.map(([value]) => h('option', { value })));
-				const fontField = textField('Fonte', layer.font, set('font'), { placeholder: 'Qualquer fonte instalada' });
+				const fonts = h('datalist', { id: 'font-list' }, FONT_OPTIONS.map(value => h('option', { value })));
+				const fontField = textField(t('inspector.font'), layer.font, set('font'), { placeholder: t('inspector.fontPlaceholder') });
 				fontField.querySelector('input').setAttribute('list', 'font-list');
 
 				return section(
 					'font',
-					'Texto',
-					textareaField('Conteúdo', layer.text, set('text')),
+					t('type.text'),
+					textareaField(t('inspector.content'), layer.text, set('text')),
 					fonts,
 					fontField,
 					row(
-						numberField('Tamanho', layer.size, set('size'), { min: 1, max: 2000, step: 1, unit: 'px', precision: 0 }),
-						selectField('Peso', layer.weight, WEIGHTS, this._setTarget('weight', (t, v) => (t.weight = Number(v))))
+						numberField(t('inspector.size'), layer.size, set('size'), { min: 1, max: 2000, step: 1, unit: 'px', precision: 0 }),
+						selectField(t('inspector.weight'), layer.weight, options(WEIGHTS), this._setTarget('weight', (target, v) => (target.weight = Number(v))))
 					),
-					row(selectField('Alinhamento', layer.align, ALIGNS, set('align')), numberField('Espaçamento', layer.letterSpacing, set('letterSpacing'), { min: -50, max: 200, step: 1, unit: 'px', precision: 0 })),
-					colorField('Cor', layer.color, set('color'))
+					row(
+						selectField(t('inspector.align'), layer.align, options(ALIGNS), set('align')),
+						numberField(t('inspector.letterSpacing'), layer.letterSpacing, set('letterSpacing'), { min: -50, max: 200, step: 1, unit: 'px', precision: 0 })
+					),
+					colorField(t('inspector.color'), layer.color, set('color'))
 				);
 			}
 
@@ -327,15 +325,15 @@ export class InspectorView {
 
 				return section(
 					'image',
-					'Imagem',
-					this._fileChoice(layer.path, 'Trocar imagem', async () => {
+					t('type.image'),
+					this._fileChoice(layer.path, t('inspector.replaceImage'), async () => {
 						const path = await window.mecha.pickAsset('image');
 						if (path) {
-							this._setTarget('path', t => (t.path = path), true)();
+							this._setTarget('path', target => (target.path = path), true)();
 						}
 					}),
-					error ? hint(`Não foi possível abrir a imagem: ${error}`, true) : null,
-					numberField('Largura', layer.width, set('width'), { min: 1, max: 8000, step: 1, unit: 'px', precision: 0 })
+					error ? hint(t('inspector.imageError', { error }), true) : null,
+					numberField(t('inspector.width'), layer.width, set('width'), { min: 1, max: 8000, step: 1, unit: 'px', precision: 0 })
 				);
 			}
 		}
@@ -349,12 +347,12 @@ export class InspectorView {
 		return section(
 			icon,
 			title,
-			selectField('Animação', anim.type, ANIMATIONS, setAnim('type', true)),
+			selectField(t('inspector.animation'), anim.type, options(ANIMATIONS), setAnim('type', true)),
 			anim.type === 'none'
 				? null
 				: row(
-						numberField('Duração', anim.duration, setAnim('duration'), { min: 0, max: 30, step: 0.1, unit: 's' }),
-						selectField('Curva', anim.easing, EASING_OPTIONS, setAnim('easing'))
+						numberField(t('inspector.duration'), anim.duration, setAnim('duration'), { min: 0, max: 30, step: 0.1, unit: 's' }),
+						selectField(t('inspector.easing'), anim.easing, options(EASING_OPTIONS), setAnim('easing'))
 					)
 		);
 	}
@@ -367,19 +365,19 @@ export class InspectorView {
 
 		if (motion.type === 'rotate') {
 			fields.push(
-				numberField('Velocidade', motion.speed, setMotion('speed'), { min: -10, max: 10, step: 0.05, unit: 'volta/s' }),
-				hint('Valores negativos giram no sentido anti-horário.')
+				numberField(t('inspector.speed'), motion.speed, setMotion('speed'), { min: -10, max: 10, step: 0.05, unit: t('inspector.turnsPerSecond') }),
+				hint(t('inspector.rotateHint'))
 			);
 		} else if (motion.type !== 'none') {
 			fields.push(
 				row(
-					numberField('Frequência', motion.speed, setMotion('speed'), { min: 0, max: 10, step: 0.05, unit: 'Hz' }),
-					rangeField('Intensidade', motion.amount, setMotion('amount'), { max: 1, format: percent })
+					numberField(t('inspector.frequency'), motion.speed, setMotion('speed'), { min: 0, max: 10, step: 0.05, unit: 'Hz' }),
+					rangeField(t('inspector.intensity'), motion.amount, setMotion('amount'), { max: 1, format: percent })
 				)
 			);
 		}
 
-		return section('arrows-spin', 'Movimento contínuo', selectField('Tipo', motion.type, MOTIONS, setMotion('type', true)), ...fields);
+		return section('arrows-spin', t('inspector.motion'), selectField(t('inspector.type'), motion.type, options(MOTIONS), setMotion('type', true)), ...fields);
 	}
 
 	// ── Audio clips ───────────────────────────────────────────────────────
@@ -392,38 +390,38 @@ export class InspectorView {
 		return [
 			section(
 				'music',
-				'Arquivo',
-				textField('Nome', clip.name, set('name')),
-				this._fileChoice(clip.path, 'Trocar arquivo', () => this.commands.replaceAudio(clip.id)),
-				hint(`O arquivo tem ${formatTime(clip.sourceDuration)} de duração.`)
+				t('inspector.file'),
+				textField(t('inspector.name'), clip.name, set('name')),
+				this._fileChoice(clip.path, t('inspector.replaceFile'), () => this.commands.replaceAudio(clip.id)),
+				hint(t('inspector.fileLength', { length: formatTime(clip.sourceDuration) }))
 			),
 			section(
 				'clock',
-				'Tempo',
+				t('inspector.timing'),
 				row(
-					numberField('Começa em', clip.start, set('start'), { min: 0, max: duration, step: 0.1, unit: 's' }),
-					numberField('Duração', clip.length, set('length'), { min: MIN_DURATION, max: available, step: 0.1, unit: 's' })
+					numberField(t('inspector.startsAt'), clip.start, set('start'), { min: 0, max: duration, step: 0.1, unit: 's' }),
+					numberField(t('inspector.duration'), clip.length, set('length'), { min: MIN_DURATION, max: available, step: 0.1, unit: 's' })
 				),
 				numberField(
-					'Pular do início do arquivo',
+					t('inspector.trimStart'),
 					clip.trimStart,
-					this._setTarget('trimStart', (t, v) => {
-						t.trimStart = Math.min(v, t.sourceDuration - MIN_DURATION);
-						t.length = Math.min(t.length, t.sourceDuration - t.trimStart);
+					this._setTarget('trimStart', (target, v) => {
+						target.trimStart = Math.min(v, target.sourceDuration - MIN_DURATION);
+						target.length = Math.min(target.length, target.sourceDuration - target.trimStart);
 					}),
 					{ min: 0, max: clip.sourceDuration, step: 0.1, unit: 's' }
 				)
 			),
 			section(
 				'volume-high',
-				'Volume e fades',
-				rangeField('Volume', clip.volume, set('volume'), { min: 0, max: 1.5, step: 0.01, format: percent }),
+				t('inspector.volumeAndFades'),
+				rangeField(t('inspector.volume'), clip.volume, set('volume'), { min: 0, max: 1.5, step: 0.01, format: percent }),
 				row(
-					numberField('Fade in', clip.fadeIn, set('fadeIn'), { min: 0, max: clip.length, step: 0.1, unit: 's' }),
-					numberField('Fade out', clip.fadeOut, set('fadeOut'), { min: 0, max: clip.length, step: 0.1, unit: 's' })
+					numberField(t('inspector.fadeIn'), clip.fadeIn, set('fadeIn'), { min: 0, max: clip.length, step: 0.1, unit: 's' }),
+					numberField(t('inspector.fadeOut'), clip.fadeOut, set('fadeOut'), { min: 0, max: clip.length, step: 0.1, unit: 's' })
 				),
-				checkField('Silenciado', clip.muted, this._setTarget('muted', (t, v) => (t.muted = v), true)),
-				hint('Os fades também podem ser arrastados pelas bolinhas no topo do clipe, na linha do tempo.')
+				checkField(t('inspector.muted'), clip.muted, this._setTarget('muted', (target, v) => (target.muted = v), true)),
+				hint(t('inspector.fadeHint'))
 			)
 		];
 	}
@@ -435,7 +433,7 @@ export class InspectorView {
 			h(
 				'div',
 				{ class: 'file-choice' },
-				h('span', { class: 'path', title: path || '' }, path ? `‎${path}` : 'Nenhum arquivo'),
+				h('span', { class: 'path', title: path || '' }, path ? `‎${path}` : t('inspector.noFile')),
 				h('button', { class: 'btn', title: label, onClick: onPick }, fa('folder-open'))
 			)
 		);

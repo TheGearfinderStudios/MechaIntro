@@ -14,9 +14,15 @@ import { openModal } from './modal.js';
 import { section, selectField, hint } from './form.js';
 import { EXPORT_FORMATS, EXPORT_QUALITIES, ExportCancelled, exportVideo } from '../export/exporter.js';
 import { formatTime } from '../core/project.js';
+import { t, options } from '../i18n/index.js';
 
 let lastFormat = 'mp4';
 let lastQuality = 'high';
+
+/** IPC wraps main-process errors as "Error invoking remote method '...': Error: <message>". */
+export function errorText(error) {
+	return String(error?.message || error).replace(/^Error invoking remote method '[^']+': (Error: )?/, '');
+}
 
 export function openExportDialog({ store, assets, player }) {
 	const { project } = store;
@@ -29,16 +35,22 @@ export function openExportDialog({ store, assets, player }) {
 
 	const summary = () => {
 		const { width, height, fps, duration } = project.settings;
-		const audible = project.audio.filter(clip => !clip.muted).length;
-		return `${width} × ${height} · ${fps} fps · ${formatTime(duration)} · ${project.layers.length} camada(s) · ${audible} som(ns)`;
+		return t('export.summary', {
+			width,
+			height,
+			fps,
+			duration: formatTime(duration),
+			layers: project.layers.length,
+			sounds: project.audio.filter(clip => !clip.muted).length
+		});
 	};
 
 	const alphaHint = h('div');
 	const syncAlphaHint = () => {
 		alphaHint.replaceChildren(
 			...[
-				transparent && format === 'mp4' ? hint('O fundo é transparente, mas o MP4 não guarda transparência: o fundo sairá preto. Use WebM para manter o canal alfa.', true) : null,
-				transparent && format === 'webm' ? hint('O WebM será exportado com canal alfa, pronto para sobrepor no editor de vídeo.') : null
+				transparent && format === 'mp4' ? hint(t('export.alphaLost'), true) : null,
+				transparent && format === 'webm' ? hint(t('export.alphaKept')) : null
 			].filter(Boolean)
 		);
 	};
@@ -48,13 +60,13 @@ export function openExportDialog({ store, assets, player }) {
 		{ class: 'page' },
 		section(
 			'film',
-			'Vídeo',
+			t('export.video'),
 			hint(summary()),
-			selectField('Formato', format, EXPORT_FORMATS, value => {
+			selectField(t('export.format'), format, options(EXPORT_FORMATS), value => {
 				format = lastFormat = value;
 				syncAlphaHint();
 			}),
-			selectField('Qualidade', quality, EXPORT_QUALITIES, value => (quality = lastQuality = value)),
+			selectField(t('export.quality'), quality, options(EXPORT_QUALITIES), value => (quality = lastQuality = value)),
 			alphaHint
 		)
 	);
@@ -65,12 +77,12 @@ export function openExportDialog({ store, assets, player }) {
 	const bar = h('div', { class: 'progress-bar' });
 	const progress = h('div', { class: 'page hidden' }, h('div', { class: 'progress-label' }, phase, percent), h('div', { class: 'progress' }, bar));
 
-	const startButton = h('button', { class: 'btn primary', onClick: start }, fa('file-export'), 'Exportar');
-	const cancelButton = h('button', { class: 'btn', onClick: cancel }, 'Cancelar');
+	const startButton = h('button', { class: 'btn primary', onClick: start }, fa('file-export'), t('export.start'));
+	const cancelButton = h('button', { class: 'btn', onClick: cancel }, t('common.cancel'));
 
 	const modal = openModal({
 		icon: 'file-export',
-		title: 'Exportar vídeo',
+		title: t('export.title'),
 		body: [settings, progress],
 		footer: [cancelButton, startButton],
 		dismissible: () => !running
@@ -95,7 +107,7 @@ export function openExportDialog({ store, assets, player }) {
 		settings.classList.add('hidden');
 		progress.classList.remove('hidden');
 		startButton.disabled = true;
-		cancelButton.textContent = 'Cancelar exportação';
+		cancelButton.textContent = t('export.cancel');
 
 		const began = performance.now();
 
@@ -126,21 +138,19 @@ export function openExportDialog({ store, assets, player }) {
 
 	function showResult(path, seconds) {
 		progress.replaceChildren(
-			h('div', { class: 'export-result' }, fa('circle-check'), h('div', null, h('strong', null, 'Vídeo exportado'), h('div', null, path))),
-			hint(`Concluído em ${seconds.toFixed(1)} s.`)
+			h('div', { class: 'export-result' }, fa('circle-check'), h('div', null, h('strong', null, t('export.done')), h('div', null, path))),
+			hint(t('export.took', { seconds: seconds.toFixed(1) }))
 		);
 		modal.element.querySelector('.modal-footer').replaceChildren(
-			h('button', { class: 'btn', onClick: () => window.mecha.reveal(path) }, fa('folder-open'), 'Mostrar na pasta'),
-			h('button', { class: 'btn primary', onClick: () => modal.close() }, 'Fechar')
+			h('button', { class: 'btn', onClick: () => window.mecha.reveal(path) }, fa('folder-open'), t('export.showInFolder')),
+			h('button', { class: 'btn primary', onClick: () => modal.close() }, t('common.close'))
 		);
 	}
 
 	function showError(error) {
 		console.error('[export]', error);
-		// IPC wraps main-process errors as "Error invoking remote method '...': Error: <message>".
-		const message = String(error.message || error).replace(/^Error invoking remote method '[^']+': (Error: )?/, '');
 
-		progress.replaceChildren(hint('A exportação falhou.', true), h('div', { class: 'export-error' }, message));
-		modal.element.querySelector('.modal-footer').replaceChildren(h('button', { class: 'btn primary', onClick: () => modal.close() }, 'Fechar'));
+		progress.replaceChildren(hint(t('export.failed'), true), h('div', { class: 'export-error' }, errorText(error)));
+		modal.element.querySelector('.modal-footer').replaceChildren(h('button', { class: 'btn primary', onClick: () => modal.close() }, t('common.close')));
 	}
 }

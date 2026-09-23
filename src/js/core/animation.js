@@ -16,28 +16,13 @@
 
 import { ease } from './easing.js';
 
-export const ANIMATIONS = [
-	['none', 'Nenhuma'],
-	['fade', 'Fade'],
-	['zoom', 'Zoom in'],
-	['zoom-out', 'Zoom out'],
-	['pop', 'Pop'],
-	['slide-up', 'Deslizar p/ cima'],
-	['slide-down', 'Deslizar p/ baixo'],
-	['slide-left', 'Deslizar p/ esquerda'],
-	['slide-right', 'Deslizar p/ direita'],
-	['spin', 'Girar'],
-	['blur', 'Desfocar'],
-	['drop', 'Cair']
-];
+/** [value, i18n key] */
+export const ANIMATIONS = ['none', 'fade', 'zoom', 'zoom-out', 'pop', 'slide-up', 'slide-down', 'slide-left', 'slide-right', 'spin', 'blur', 'drop'].map(
+	name => [name, `animation.${name}`]
+);
 
-export const MOTIONS = [
-	['none', 'Nenhum'],
-	['rotate', 'Rotação contínua'],
-	['pulse', 'Pulsar'],
-	['float', 'Flutuar'],
-	['swing', 'Balançar']
-];
+/** [value, i18n key] */
+export const MOTIONS = ['none', 'rotate', 'pulse', 'float', 'swing'].map(name => [name, `motion.${name}`]);
 
 const clamp01 = v => Math.min(1, Math.max(0, v));
 

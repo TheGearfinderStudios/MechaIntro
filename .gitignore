@@ -1,5 +1,6 @@
 /node_modules/
 /dist/
+/docs/
 
 # Built from Font Awesome's metadata on postinstall (npm run icons).
 /src/generated/

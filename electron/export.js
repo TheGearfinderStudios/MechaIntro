@@ -14,6 +14,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { randomUUID } from 'node:crypto';
 import ffmpegStatic from 'ffmpeg-static';
+import { t } from '../src/js/i18n/index.js';
 
 // Inside a packaged build the binary is unpacked next to the asar, where it can run.
 const FFMPEG = ffmpegStatic.replace('app.asar', 'app.asar.unpacked');
@@ -99,10 +100,10 @@ export async function writeFrame(id, frame) {
 	const job = jobs.get(id);
 
 	if (!job) {
-		throw new Error('Exportação não encontrada');
+		throw new Error(t('error.exportNotFound'));
 	}
 	if (job.child.exitCode !== null) {
-		throw new Error(`O ffmpeg encerrou antes do fim:\n${job.stderr}`);
+		throw new Error(`${t('error.ffmpegExited')}\n${job.stderr}`);
 	}
 
 	const buffer = Buffer.from(frame.buffer, frame.byteOffset, frame.byteLength);
@@ -124,7 +125,7 @@ export async function finishExport(id) {
 	const job = jobs.get(id);
 
 	if (!job) {
-		throw new Error('Exportação não encontrada');
+		throw new Error(t('error.exportNotFound'));
 	}
 
 	job.child.stdin.end();
@@ -132,7 +133,7 @@ export async function finishExport(id) {
 	await cleanup(id);
 
 	if (code !== 0) {
-		throw new Error(`O ffmpeg falhou (código ${code}):\n${job.stderr}`);
+		throw new Error(`${t('error.ffmpegFailed', { code })}\n${job.stderr}`);
 	}
 	return job.outPath;
 }

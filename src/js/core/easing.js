@@ -41,16 +41,8 @@ export const EASINGS = {
 	'bounce-out': bounceOut
 };
 
-export const EASING_OPTIONS = [
-	['linear', 'Linear'],
-	['ease-in', 'Acelerar'],
-	['ease-out', 'Desacelerar'],
-	['ease-in-out', 'Suave'],
-	['back-out', 'Recuo (saída)'],
-	['back-in', 'Recuo (entrada)'],
-	['elastic-out', 'Elástico'],
-	['bounce-out', 'Quicar']
-];
+/** [value, i18n key] */
+export const EASING_OPTIONS = Object.keys(EASINGS).map(name => [name, `easing.${name}`]);
 
 export function ease(name, t) {
 	const fn = EASINGS[name] || EASINGS.linear;

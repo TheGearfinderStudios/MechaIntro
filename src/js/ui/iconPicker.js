@@ -12,6 +12,7 @@
 import { h, fa } from './dom.js';
 import { openModal } from './modal.js';
 import { ICON_STYLES, iconCount, searchIcons } from '../core/icons.js';
+import { t } from '../i18n/index.js';
 
 const RESULT_LIMIT = 400;
 
@@ -29,13 +30,13 @@ export function pickIcon(current = {}) {
 
 		const grid = h('div', { class: 'icon-grid' });
 		const status = h('span', { class: 'left' });
-		const search = h('input', { type: 'text', placeholder: `Buscar entre ${iconCount()} ícones (em inglês: gear, star, music...)`, spellcheck: false });
-		const confirmButton = h('button', { class: 'btn primary', disabled: !chosen, onClick: () => finish(chosen) }, fa('check'), 'Usar ícone');
+		const search = h('input', { type: 'text', placeholder: t('picker.search', { count: iconCount() }), spellcheck: false });
+		const confirmButton = h('button', { class: 'btn primary', disabled: !chosen, onClick: () => finish(chosen) }, fa('check'), t('picker.use'));
 
 		const tabs = h(
 			'div',
 			{ class: 'segmented' },
-			[['all', 'Todos'], ...ICON_STYLES].map(([value, label]) =>
+			[['all', t('picker.all')], ...ICON_STYLES].map(([value, label]) =>
 				h(
 					'button',
 					{
@@ -76,7 +77,9 @@ export function pickIcon(current = {}) {
 			);
 
 			status.textContent =
-				total > results.length ? `Mostrando ${results.length} de ${total}. Refine a busca para ver o resto.` : `${total} ícone${total === 1 ? '' : 's'}`;
+				total > results.length
+					? t('picker.truncated', { shown: results.length, total })
+					: t(total === 1 ? 'picker.count.one' : 'picker.count.other', { count: total });
 		}
 
 		function finish(value) {
@@ -97,13 +100,13 @@ export function pickIcon(current = {}) {
 
 		const modal = openModal({
 			icon: 'icons',
-			title: 'Escolher ícone',
+			title: t('picker.title'),
 			wide: true,
 			body: [
 				h('div', { class: 'tool-header' }, h('label', { class: 'search-box' }, fa('magnifying-glass'), search), tabs),
 				h('div', { class: 'page', 'data-scrollbar': 'css' }, grid)
 			],
-			footer: [status, h('button', { class: 'btn', onClick: () => modal.close() }, 'Cancelar'), confirmButton],
+			footer: [status, h('button', { class: 'btn', onClick: () => modal.close() }, t('common.cancel')), confirmButton],
 			onClose: () => resolve(result)
 		});
 

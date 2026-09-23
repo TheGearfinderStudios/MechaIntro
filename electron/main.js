@@ -13,19 +13,21 @@ import { readFile, writeFile } from 'node:fs/promises';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { beginExport, writeFrame, finishExport, cancelExport, killAllExports } from './export.js';
+// One set of dictionaries for both processes; the renderer reports which one is in use.
+import { t, setLocale } from '../src/js/i18n/index.js';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 const isDev = process.argv.includes('--dev');
-const smokeShot = process.env.MECHAINTRO_SMOKE || null;
 
-const PROJECT_FILTER = { name: 'Projeto MechaIntro', extensions: ['mintro'] };
+// Functions, not constants: the names are read in whatever language is current.
+const PROJECT_FILTER = () => ({ name: t('dialog.filter.project'), extensions: ['mintro'] });
 const ASSET_FILTERS = {
-	image: [{ name: 'Imagens', extensions: ['png', 'jpg', 'jpeg', 'webp', 'gif', 'bmp', 'svg'] }],
-	audio: [{ name: 'Áudio', extensions: ['mp3', 'wav', 'ogg', 'oga', 'flac', 'm4a', 'aac', 'opus', 'webm'] }]
+	image: () => [{ name: t('dialog.filter.images'), extensions: ['png', 'jpg', 'jpeg', 'webp', 'gif', 'bmp', 'svg'] }],
+	audio: () => [{ name: t('dialog.filter.audio'), extensions: ['mp3', 'wav', 'ogg', 'oga', 'flac', 'm4a', 'aac', 'opus', 'webm'] }]
 };
 const EXPORT_FILTERS = {
-	mp4: [{ name: 'Vídeo MP4', extensions: ['mp4'] }],
-	webm: [{ name: 'Vídeo WebM', extensions: ['webm'] }]
+	mp4: () => [{ name: t('dialog.filter.mp4'), extensions: ['mp4'] }],
+	webm: () => [{ name: t('dialog.filter.webm'), extensions: ['webm'] }]
 };
 
 /** @type {BrowserWindow | null} */
@@ -65,12 +67,12 @@ function createWindow() {
 
 		const choice = dialog.showMessageBoxSync(win, {
 			type: 'warning',
-			buttons: ['Sair sem salvar', 'Cancelar'],
+			buttons: [t('quit.discard'), t('common.cancel')],
 			defaultId: 1,
 			cancelId: 1,
-			title: 'Alterações não salvas',
-			message: 'O projeto tem alterações que não foram salvas.',
-			detail: 'Se sair agora, elas serão perdidas.'
+			title: t('quit.title'),
+			message: t('quit.message'),
+			detail: t('quit.detail')
 		});
 
 		if (choice !== 0) {
@@ -93,45 +95,20 @@ function createWindow() {
 	if (isDev) {
 		win.webContents.openDevTools({ mode: 'detach' });
 	}
-	if (isDev || smokeShot) {
+	if (isDev) {
 		win.webContents.on('console-message', ({ level, message, sourceId, lineNumber }) => {
 			console.log(`[renderer:${level}] ${message} (${sourceId}:${lineNumber})`);
 		});
 	}
-	if (smokeShot) {
-		runSmoke(win);
-	}
-}
-
-/**
- * MECHAINTRO_SMOKE=<file.png>: load, give the page a moment, screenshot it and quit.
- * A quick check that the renderer boots without errors, with no one at the keyboard.
- */
-function runSmoke(target) {
-	target.webContents.once('did-finish-load', () => {
-		setTimeout(async () => {
-			// MECHAINTRO_SMOKE_JS: a script to run in the page first (select a layer, open a dialog...).
-			if (process.env.MECHAINTRO_SMOKE_JS) {
-				try {
-					console.log('[smoke] script ->', await target.webContents.executeJavaScript(process.env.MECHAINTRO_SMOKE_JS));
-				} catch (error) {
-					console.log('[smoke] script failed:', error.message);
-				}
-				await new Promise(resolve => setTimeout(resolve, 800));
-			}
-
-			const image = await target.webContents.capturePage();
-			await writeFile(smokeShot, image.toPNG());
-			console.log(`[smoke] screenshot -> ${smokeShot}`);
-			dirty = false;
-			app.quit();
-		}, Number(process.env.MECHAINTRO_SMOKE_DELAY) || 2500);
-	});
 }
 
 function registerIpc() {
 	ipcMain.handle('app:set-dirty', (_event, value) => {
 		dirty = Boolean(value);
+	});
+
+	ipcMain.handle('app:set-locale', (_event, code) => {
+		setLocale(code);
 	});
 
 	ipcMain.handle('app:set-title', (_event, title) => {
@@ -154,8 +131,8 @@ function registerIpc() {
 
 	ipcMain.handle('project:open', async () => {
 		const { canceled, filePaths } = await dialog.showOpenDialog(win, {
-			title: 'Abrir projeto',
-			filters: [PROJECT_FILTER],
+			title: t('dialog.openProject'),
+			filters: [PROJECT_FILTER()],
 			properties: ['openFile']
 		});
 
@@ -172,9 +149,9 @@ function registerIpc() {
 
 		if (!target || saveAs) {
 			const { canceled, filePath } = await dialog.showSaveDialog(win, {
-				title: 'Salvar projeto',
+				title: t('dialog.saveProject'),
 				defaultPath: target || `${suggestedName || 'intro'}.mintro`,
-				filters: [PROJECT_FILTER]
+				filters: [PROJECT_FILTER()]
 			});
 
 			if (canceled || !filePath) {
@@ -189,8 +166,8 @@ function registerIpc() {
 
 	ipcMain.handle('asset:pick', async (_event, kind) => {
 		const { canceled, filePaths } = await dialog.showOpenDialog(win, {
-			title: kind === 'audio' ? 'Escolher áudio' : 'Escolher imagem',
-			filters: ASSET_FILTERS[kind] || [],
+			title: kind === 'audio' ? t('dialog.chooseAudio') : t('dialog.chooseImage'),
+			filters: ASSET_FILTERS[kind]?.() || [],
 			properties: ['openFile']
 		});
 
@@ -204,9 +181,9 @@ function registerIpc() {
 
 	ipcMain.handle('export:pick', async (_event, { format, suggestedName }) => {
 		const { canceled, filePath } = await dialog.showSaveDialog(win, {
-			title: 'Exportar vídeo',
+			title: t('export.title'),
 			defaultPath: `${suggestedName || 'intro'}.${format}`,
-			filters: EXPORT_FILTERS[format] || []
+			filters: EXPORT_FILTERS[format]?.() || []
 		});
 
 		return canceled ? null : filePath || null;

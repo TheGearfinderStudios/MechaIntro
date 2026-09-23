@@ -12,21 +12,17 @@
 import { assetPaths } from '../core/project.js';
 import { drawScene } from '../render/scene.js';
 import { renderMixdown } from '../audio/mixer.js';
+import { t } from '../i18n/index.js';
 
-export const EXPORT_FORMATS = [
-	['mp4', 'MP4 (H.264 + AAC)'],
-	['webm', 'WebM (VP9 + Opus)']
-];
+/** [value, i18n key] */
+export const EXPORT_FORMATS = ['mp4', 'webm'].map(value => [value, `format.${value}`]);
 
-export const EXPORT_QUALITIES = [
-	['high', 'Alta'],
-	['medium', 'Média'],
-	['low', 'Leve']
-];
+/** [value, i18n key] */
+export const EXPORT_QUALITIES = ['high', 'medium', 'low'].map(value => [value, `quality.${value}`]);
 
 export class ExportCancelled extends Error {
 	constructor() {
-		super('Exportação cancelada');
+		super(t('export.cancelled'));
 	}
 }
 
@@ -52,12 +48,12 @@ export async function exportVideo(project, assets, { outPath, format, quality, o
 		}
 	};
 
-	onProgress({ phase: 'Carregando imagens e fontes', ratio: 0 });
+	onProgress({ phase: t('export.phase.assets'), ratio: 0 });
 	await assets.ensureImages(assetPaths(project).images);
 	await loadFonts(project);
 	check();
 
-	onProgress({ phase: 'Mixando áudio', ratio: 0 });
+	onProgress({ phase: t('export.phase.audio'), ratio: 0 });
 	const audio = await renderMixdown(project, assets);
 	check();
 
@@ -73,10 +69,10 @@ export async function exportVideo(project, assets, { outPath, format, quality, o
 			drawScene(ctx, project, frame / fps, assets);
 			await window.mecha.exportFrame(job, ctx.getImageData(0, 0, width, height).data);
 
-			onProgress({ phase: `Renderizando quadro ${frame + 1} de ${frames}`, ratio: (frame + 1) / frames });
+			onProgress({ phase: t('export.phase.frame', { frame: frame + 1, frames }), ratio: (frame + 1) / frames });
 		}
 
-		onProgress({ phase: 'Finalizando o arquivo', ratio: 1 });
+		onProgress({ phase: t('export.phase.finish'), ratio: 1 });
 		return await window.mecha.exportEnd(job);
 	} catch (error) {
 		await window.mecha.exportCancel(job).catch(() => null);

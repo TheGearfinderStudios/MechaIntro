@@ -8,7 +8,7 @@
  */
 
 /**
- * h('button', { class: 'btn', onClick }, fa('play'), 'Tocar')
+ * h('button', { class: 'btn', onClick }, fa('play'), 'Play')
  * Props: `class`, `style` (object), `dataset`, `on<Event>` listeners, and anything
  * else as a DOM property when the element has one, an attribute otherwise.
  */

@@ -14,6 +14,7 @@ contextBridge.exposeInMainWorld('mecha', {
 	setDirty: dirty => ipcRenderer.invoke('app:set-dirty', dirty),
 	setTitle: title => ipcRenderer.invoke('app:set-title', title),
 	about: () => ipcRenderer.invoke('app:about'),
+	setLocale: code => ipcRenderer.invoke('app:set-locale', code),
 
 	openProject: () => ipcRenderer.invoke('project:open'),
 	saveProject: request => ipcRenderer.invoke('project:save', request),

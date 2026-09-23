@@ -23,9 +23,8 @@ import {
 import { iconLabel } from './core/icons.js';
 import { pickIcon } from './ui/iconPicker.js';
 import { confirmDialog, toast } from './ui/modal.js';
-import { openExportDialog } from './ui/exportDialog.js';
-
-const errorText = error => String(error?.message || error).replace(/^Error invoking remote method '[^']+': (Error: )?/, '');
+import { openExportDialog, errorText } from './ui/exportDialog.js';
+import { t } from './i18n/index.js';
 
 export function createCommands({ store, assets, player }) {
 	const findLayer = (project, id) => project.layers.find(layer => layer.id === id);
@@ -38,9 +37,9 @@ export function createCommands({ store, assets, player }) {
 		}
 		return confirmDialog({
 			icon: 'triangle-exclamation',
-			title: 'Alterações não salvas',
-			message: 'O projeto atual tem alterações que não foram salvas. Descartar e continuar?',
-			confirm: 'Descartar',
+			title: t('discard.title'),
+			message: t('discard.message'),
+			confirm: t('discard.confirm'),
 			danger: true
 		});
 	}
@@ -68,10 +67,10 @@ export function createCommands({ store, assets, player }) {
 				if (opened) {
 					player.stop();
 					store.load(normalizeProject(opened.data), opened.path);
-					toast(`Projeto aberto: ${fileName(opened.path)}`, 'success');
+					toast(t('toast.opened', { name: fileName(opened.path) }), 'success');
 				}
 			} catch (error) {
-				toast(`Não foi possível abrir o projeto: ${errorText(error)}`, 'error', 6000);
+				toast(t('toast.openFailed', { error: errorText(error) }), 'error', 6000);
 			}
 		},
 
@@ -86,10 +85,10 @@ export function createCommands({ store, assets, player }) {
 
 				if (path) {
 					store.markSaved(path);
-					toast(`Salvo em ${path}`, 'success');
+					toast(t('toast.saved', { path }), 'success');
 				}
 			} catch (error) {
-				toast(`Não foi possível salvar: ${errorText(error)}`, 'error', 6000);
+				toast(t('toast.saveFailed', { error: errorText(error) }), 'error', 6000);
 			}
 		},
 
@@ -132,7 +131,7 @@ export function createCommands({ store, assets, player }) {
 				store.update(project => project.audio.push(clip));
 				store.select('audio', clip.id);
 			} catch (error) {
-				toast(`Não foi possível ler o áudio: ${errorText(error)}`, 'error', 6000);
+				toast(t('toast.audioFailed', { error: errorText(error) }), 'error', 6000);
 			}
 		},
 
@@ -155,7 +154,7 @@ export function createCommands({ store, assets, player }) {
 					}
 				});
 			} catch (error) {
-				toast(`Não foi possível ler o áudio: ${errorText(error)}`, 'error', 6000);
+				toast(t('toast.audioFailed', { error: errorText(error) }), 'error', 6000);
 			}
 		},
 
@@ -198,7 +197,7 @@ export function createCommands({ store, assets, player }) {
 				return;
 			}
 
-			const copy = { ...structuredClone(original), id: uid(kind === 'audio' ? 'audio' : 'layer'), name: `${original.name} (cópia)` };
+			const copy = { ...structuredClone(original), id: uid(kind === 'audio' ? 'audio' : 'layer'), name: t('common.copyOf', { name: original.name }) };
 
 			store.update(project => {
 				const list = kind === 'audio' ? project.audio : project.layers;
