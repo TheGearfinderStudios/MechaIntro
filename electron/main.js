@@ -8,7 +8,7 @@
  * @license GPL-3.0-or-later
  */
 
-import { app, BrowserWindow, dialog, ipcMain, Menu, shell } from 'electron';
+import { app, BrowserWindow, clipboard, dialog, ipcMain, Menu, shell } from 'electron';
 import { readFile, writeFile } from 'node:fs/promises';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -193,6 +193,13 @@ function registerIpc() {
 	ipcMain.handle('export:frame', (_event, id, frame) => writeFrame(id, frame));
 	ipcMain.handle('export:end', (_event, id) => finishExport(id));
 	ipcMain.handle('export:cancel', (_event, id) => cancelExport(id));
+
+	// The system clipboard, so elements copy between projects and windows. A
+	// sandboxed preload has no clipboard module of its own.
+	ipcMain.handle('clipboard:write', (_event, text) => {
+		clipboard.writeText(String(text));
+	});
+	ipcMain.handle('clipboard:read', () => clipboard.readText());
 
 	ipcMain.handle('shell:reveal', (_event, path) => {
 		shell.showItemInFolder(path);

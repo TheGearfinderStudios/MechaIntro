@@ -21,6 +21,7 @@ import {
 	MIN_DURATION
 } from './core/project.js';
 import { iconLabel } from './core/icons.js';
+import { serializeElement, parseElement, prepareElement } from './core/clipboard.js';
 import { pickIcon } from './ui/iconPicker.js';
 import { confirmDialog, toast } from './ui/modal.js';
 import { openExportDialog, errorText } from './ui/exportDialog.js';
@@ -204,6 +205,63 @@ export function createCommands({ store, assets, player }) {
 				list.splice(list.findIndex(item => item.id === id) + 1, 0, copy);
 			});
 			store.select(kind, copy.id);
+		},
+
+		/** Put the selected layer or clip on the system clipboard. Resolves true when something was copied. */
+		async copy() {
+			const { kind } = store.selection;
+			const item = store.find();
+
+			if (!item || (kind !== 'layer' && kind !== 'audio')) {
+				return false;
+			}
+
+			try {
+				await window.mecha.writeClipboard(serializeElement(kind, item));
+				toast(t('toast.copied', { name: item.name || t('common.unnamed') }));
+				return true;
+			} catch (error) {
+				toast(t('toast.copyFailed', { error: errorText(error) }), 'error', 6000);
+				return false;
+			}
+		},
+
+		async cut() {
+			const selection = { ...store.selection };
+
+			if (await commands.copy()) {
+				commands.remove(selection);
+			}
+		},
+
+		/**
+		 * Paste whatever element is on the clipboard: a layer lands just above the
+		 * selected layer (or on top of the stack), a clip just after the selected clip.
+		 * Where it sits on the canvas and on the timeline is kept.
+		 */
+		async paste() {
+			let entry = null;
+
+			try {
+				entry = parseElement(await window.mecha.readClipboard());
+			} catch {
+				// An unreadable clipboard is just an empty one here.
+			}
+
+			if (!entry) {
+				toast(t('toast.nothingToPaste'));
+				return;
+			}
+
+			const element = prepareElement(store.project, entry);
+			const { kind, id } = store.selection;
+
+			store.update(project => {
+				const list = entry.kind === 'audio' ? project.audio : project.layers;
+				const anchor = kind === entry.kind ? list.findIndex(item => item.id === id) : -1;
+				list.splice(anchor >= 0 ? anchor + 1 : list.length, 0, element);
+			});
+			store.select(entry.kind, element.id);
 		},
 
 		/** Move layer `id` directly above or below layer `targetId` in the stack. */

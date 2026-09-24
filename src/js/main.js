@@ -131,11 +131,14 @@ window.addEventListener('keydown', event => {
 			o: () => commands.openProject(),
 			n: () => commands.newProject(),
 			e: () => commands.exportVideo(),
-			d: () => commands.duplicate()
+			d: () => commands.duplicate(),
+			c: () => commands.copy(),
+			x: () => commands.cut(),
+			v: () => commands.paste()
 		}[key];
 
-		// Undo inside a text field belongs to the field.
-		if (action && !((key === 'z' || key === 'y') && isEditingText())) {
+		// Undo and the clipboard inside a text field belong to the field.
+		if (action && !('zycxv'.includes(key) && isEditingText())) {
 			event.preventDefault();
 			action();
 		}

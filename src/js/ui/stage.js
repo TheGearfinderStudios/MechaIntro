@@ -13,13 +13,15 @@ import { h, fa, svg, iconButton, dragGesture } from './dom.js';
 import { drawScene, hitTest, layerCorners, layerSize } from '../render/scene.js';
 import { formatTime } from '../core/project.js';
 import { t } from '../i18n/index.js';
+import { openElementMenu } from './contextMenu.js';
 
 // How close (in screen pixels) a dragged layer's centre gets to a centre line before it snaps.
 const SNAP_SCREEN_PX = 10;
 
 export class StageView {
-	constructor(root, { store, assets, player }) {
+	constructor(root, { store, assets, player, commands }) {
 		this.store = store;
+		this.commands = commands;
 		this.assets = assets;
 		this.player = player;
 		this._pending = false;
@@ -55,6 +57,7 @@ export class StageView {
 		root.append(this.viewport, transport);
 
 		this.overlay.addEventListener('pointerdown', event => this._onPointerDown(event));
+		this.overlay.addEventListener('contextmenu', event => this._onContextMenu(event));
 		// Deferred a frame: resizing the frame inside the observer callback would
 		// re-trigger layout in the same pass ("ResizeObserver loop" warnings).
 		const resize = new ResizeObserver(() => requestAnimationFrame(() => this._fit()));
@@ -182,6 +185,29 @@ export class StageView {
 		};
 	}
 
+	/** The layer under a canvas point, or null. */
+	_layerAt(point) {
+		const { store } = this;
+		const layer = hitTest(store.project, store.time, point.x, point.y, this.assets);
+
+		if (layer) {
+			return layer;
+		}
+
+		// The selected layer keeps priority when it is off screen right now: its dashed
+		// outline is still grabbable.
+		const selected = store.selection.kind === 'layer' ? store.find() : null;
+		if (selected && !layerCorners(selected, store.project, store.time, this.assets) && this._inside(this._restCorners(selected), point)) {
+			return selected;
+		}
+		return null;
+	}
+
+	_onContextMenu(event) {
+		const layer = this._layerAt(this._toCanvas(event));
+		openElementMenu(event, this, layer ? { kind: 'layer', id: layer.id } : null);
+	}
+
 	_onPointerDown(event) {
 		if (event.button !== 0) {
 			return;
@@ -189,14 +215,7 @@ export class StageView {
 
 		const { store } = this;
 		const point = this._toCanvas(event);
-		let layer = hitTest(store.project, store.time, point.x, point.y, this.assets);
-
-		// The selected layer keeps priority when it is off screen right now: its dashed
-		// outline is still grabbable.
-		const selected = store.selection.kind === 'layer' ? store.find() : null;
-		if (!layer && selected && !layerCorners(selected, store.project, store.time, this.assets) && this._inside(this._restCorners(selected), point)) {
-			layer = selected;
-		}
+		const layer = this._layerAt(point);
 
 		if (!layer) {
 			store.select('background');

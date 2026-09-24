@@ -59,6 +59,8 @@ The application icon lives in [build/icon.png](build/icon.png) (a PNG of at leas
 4. On the **Timeline**, drag the bars to change when each layer is on screen. On audio clips, the edges trim the sound and the dots on top set the fades.
 5. Click **Export video**.
 
+Right-click a layer or a sound (in the Layers panel, on the timeline or on the stage) to copy, cut, paste, duplicate or delete it. Copied elements go on the system clipboard, so they paste into another project, or another MechaIntro window, with all their settings. A pasted layer lands just above the selected one, in the same place on the canvas and on the timeline.
+
 The interface is in English by default; Brazilian Portuguese is available from the language button in the titlebar. The choice is remembered.
 
 ### Shortcuts
@@ -73,6 +75,7 @@ The interface is in English by default; Brazilian Portuguese is available from t
 | Delete | Delete the selection |
 | Esc | Clear the selection |
 | Ctrl+Z / Ctrl+Y | Undo / redo |
+| Ctrl+C / Ctrl+X / Ctrl+V | Copy / cut / paste the selected layer or sound |
 | Ctrl+D | Duplicate |
 | Ctrl+N / Ctrl+O | New project / open |
 | Ctrl+S / Ctrl+Shift+S | Save / save as |

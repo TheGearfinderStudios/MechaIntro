@@ -247,6 +247,13 @@ export default {
 	'export.phase.frame': 'Rendering frame {frame} of {frames}',
 	'export.phase.finish': 'Finishing the file',
 
+	// Context menu
+	'menu.copy': 'Copy',
+	'menu.cut': 'Cut',
+	'menu.paste': 'Paste',
+	'menu.duplicate': 'Duplicate',
+	'menu.delete': 'Delete',
+
 	// Messages
 	'discard.title': 'Unsaved changes',
 	'discard.message': 'The current project has unsaved changes. Discard them and continue?',
@@ -257,6 +264,9 @@ export default {
 	'toast.saved': 'Saved to {path}',
 	'toast.saveFailed': 'Could not save: {error}',
 	'toast.audioFailed': 'Could not read the audio: {error}',
+	'toast.copied': 'Copied: {name}',
+	'toast.copyFailed': 'Could not copy: {error}',
+	'toast.nothingToPaste': 'Nothing to paste. Copy a layer or a sound first.',
 
 	'error.loadAssets': 'Could not load: {paths}',
 	'error.exportNotFound': 'Export job not found',

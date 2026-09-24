@@ -10,6 +10,7 @@
 
 import { h, fa, panelTitle } from './dom.js';
 import { t } from '../i18n/index.js';
+import { openElementMenu } from './contextMenu.js';
 
 export const TYPE_ICONS = { icon: 'icons', text: 'font', image: 'image', audio: 'music', background: 'fill-drip' };
 
@@ -17,7 +18,12 @@ export class LayersView {
 	constructor(root, { store, commands }) {
 		this.store = store;
 		this.commands = commands;
-		this.list = h('div', { class: 'page', 'data-scrollbar': 'css' });
+		this.list = h('div', {
+			class: 'page',
+			'data-scrollbar': 'css',
+			// Rows open their own menu; anywhere else in the list offers Paste.
+			onContextmenu: event => openElementMenu(event, { store, commands }, null)
+		});
 
 		root.append(
 			panelTitle('layer-group', t('layers.title')),
@@ -84,6 +90,7 @@ export class LayersView {
 				class: `layer-row${selected ? ' selected' : ''}${layer.visible ? '' : ' off'}`,
 				draggable: true,
 				onClick: () => this.store.select('layer', layer.id),
+				onContextmenu: event => openElementMenu(event, this, { kind: 'layer', id: layer.id }),
 				onDragstart: event => {
 					event.dataTransfer.effectAllowed = 'move';
 					event.dataTransfer.setData('application/x-mechaintro-layer', layer.id);
@@ -148,7 +155,8 @@ export class LayersView {
 			'div',
 			{
 				class: `layer-row${selected ? ' selected' : ''}${clip.muted ? ' off' : ''}`,
-				onClick: () => this.store.select('audio', clip.id)
+				onClick: () => this.store.select('audio', clip.id),
+				onContextmenu: event => openElementMenu(event, this, { kind: 'audio', id: clip.id })
 			},
 			h('span', { class: 'type-icon' }, fa('music')),
 			h('span', { class: 'name', title: clip.path }, clip.name || t('common.unnamed')),

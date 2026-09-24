@@ -247,6 +247,13 @@ export default {
 	'export.phase.frame': 'Renderizando quadro {frame} de {frames}',
 	'export.phase.finish': 'Finalizando o arquivo',
 
+	// Context menu
+	'menu.copy': 'Copiar',
+	'menu.cut': 'Recortar',
+	'menu.paste': 'Colar',
+	'menu.duplicate': 'Duplicar',
+	'menu.delete': 'Excluir',
+
 	// Messages
 	'discard.title': 'Alterações não salvas',
 	'discard.message': 'O projeto atual tem alterações que não foram salvas. Descartar e continuar?',
@@ -257,6 +264,9 @@ export default {
 	'toast.saved': 'Salvo em {path}',
 	'toast.saveFailed': 'Não foi possível salvar: {error}',
 	'toast.audioFailed': 'Não foi possível ler o áudio: {error}',
+	'toast.copied': 'Copiado: {name}',
+	'toast.copyFailed': 'Não foi possível copiar: {error}',
+	'toast.nothingToPaste': 'Nada para colar. Copie uma camada ou um som primeiro.',
 
 	'error.loadAssets': 'Não foi possível carregar: {paths}',
 	'error.exportNotFound': 'Exportação não encontrada',

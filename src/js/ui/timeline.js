@@ -14,6 +14,7 @@ import { h, fa, svg, panelTitle, dragGesture } from './dom.js';
 import { MIN_DURATION, formatTime } from '../core/project.js';
 import { TYPE_ICONS } from './layers.js';
 import { t } from '../i18n/index.js';
+import { openElementMenu } from './contextMenu.js';
 
 const HEAD_WIDTH = 190;
 const TAIL = 160;
@@ -23,8 +24,9 @@ const MAX_PPS = 2000;
 const TICK_STEPS = [0.1, 0.25, 0.5, 1, 2, 5, 10, 15, 30, 60];
 
 export class TimelineView {
-	constructor(root, { store, assets, player }) {
+	constructor(root, { store, assets, player, commands }) {
 		this.store = store;
+		this.commands = commands;
 		this.assets = assets;
 		this.player = player;
 		this.pps = null; // pixels per second; null = fit to width
@@ -208,11 +210,27 @@ export class TimelineView {
 				this._scrub(event, lane);
 			}
 		});
+		lane.addEventListener('contextmenu', event => {
+			if (event.target === lane) {
+				openElementMenu(event, this, null);
+			}
+		});
 		return lane;
 	}
 
-	_head(icon, name, selected, onSelect, toggle) {
-		return h('div', { class: 'tl-head', title: name, onClick: onSelect }, h('span', { class: 'type-icon' }, icon), h('span', { class: 'name' }, name || t('common.unnamed')), toggle);
+	_head(icon, name, selection, toggle) {
+		return h(
+			'div',
+			{
+				class: 'tl-head',
+				title: name,
+				onClick: () => this.store.select(selection.kind, selection.id),
+				onContextmenu: event => openElementMenu(event, this, selection)
+			},
+			h('span', { class: 'type-icon' }, icon),
+			h('span', { class: 'name' }, name || t('common.unnamed')),
+			toggle
+		);
 	}
 
 	_toggleButton(icon, title, onClick) {
@@ -252,6 +270,7 @@ export class TimelineView {
 		);
 
 		clip.addEventListener('pointerdown', event => this._dragLayer(event, layer));
+		clip.addEventListener('contextmenu', event => openElementMenu(event, this, { kind: 'layer', id: layer.id }));
 
 		const lane = this._emptyLane(laneWidth);
 		lane.append(clip);
@@ -262,8 +281,7 @@ export class TimelineView {
 			this._head(
 				icon,
 				layer.name,
-				selected,
-				() => this.store.select('layer', layer.id),
+				{ kind: 'layer', id: layer.id },
 				this._toggleButton(layer.visible ? 'eye' : 'eye-slash', layer.visible ? t('layers.hide') : t('layers.show'), () =>
 					this.store.update(project => {
 						const target = project.layers.find(item => item.id === layer.id);
@@ -309,6 +327,7 @@ export class TimelineView {
 		);
 
 		bar.addEventListener('pointerdown', event => this._dragAudio(event, clip));
+		bar.addEventListener('contextmenu', event => openElementMenu(event, this, { kind: 'audio', id: clip.id }));
 
 		const lane = this._emptyLane(laneWidth);
 		lane.append(bar);
@@ -319,8 +338,7 @@ export class TimelineView {
 			this._head(
 				fa('music'),
 				clip.name,
-				selected,
-				() => this.store.select('audio', clip.id),
+				{ kind: 'audio', id: clip.id },
 				this._toggleButton(clip.muted ? 'volume-xmark' : 'volume-high', clip.muted ? t('layers.unmute') : t('layers.mute'), () =>
 					this.store.update(project => {
 						const target = project.audio.find(item => item.id === clip.id);

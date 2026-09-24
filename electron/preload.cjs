@@ -28,5 +28,8 @@ contextBridge.exposeInMainWorld('mecha', {
 	exportEnd: id => ipcRenderer.invoke('export:end', id),
 	exportCancel: id => ipcRenderer.invoke('export:cancel', id),
 
+	writeClipboard: text => ipcRenderer.invoke('clipboard:write', text),
+	readClipboard: () => ipcRenderer.invoke('clipboard:read'),
+
 	reveal: path => ipcRenderer.invoke('shell:reveal', path)
 });

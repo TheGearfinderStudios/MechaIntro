@@ -173,26 +173,33 @@ export function normalizeProject(raw) {
 		background: { ...fresh.background, ...(raw?.background || {}) }
 	};
 
-	project.layers = (Array.isArray(raw?.layers) ? raw.layers : []).map(layer => {
-		const factory = { icon: createIconLayer, text: createTextLayer }[layer.type];
-		const base = factory ? factory(project) : createImageLayer(project, layer.path);
-
-		return {
-			...base,
-			...layer,
-			shadow: { ...base.shadow, ...(layer.shadow || {}) },
-			animIn: { ...base.animIn, ...(layer.animIn || {}) },
-			animOut: { ...base.animOut, ...(layer.animOut || {}) },
-			motion: { ...base.motion, ...(layer.motion || {}) }
-		};
-	});
-
-	project.audio = (Array.isArray(raw?.audio) ? raw.audio : []).map(clip => ({
-		...createAudioClip(project, clip.path, Number(clip.sourceDuration) || Number(clip.length) || 1),
-		...clip
-	}));
+	project.layers = (Array.isArray(raw?.layers) ? raw.layers : []).map(layer => normalizeLayer(project, layer));
+	project.audio = (Array.isArray(raw?.audio) ? raw.audio : []).map(clip => normalizeClip(project, clip));
 
 	return project;
+}
+
+/** A visual layer with every field present, defaults filling the gaps. */
+export function normalizeLayer(project, layer) {
+	const factory = { icon: createIconLayer, text: createTextLayer }[layer.type];
+	const base = factory ? factory(project) : createImageLayer(project, layer.path);
+
+	return {
+		...base,
+		...layer,
+		shadow: { ...base.shadow, ...(layer.shadow || {}) },
+		animIn: { ...base.animIn, ...(layer.animIn || {}) },
+		animOut: { ...base.animOut, ...(layer.animOut || {}) },
+		motion: { ...base.motion, ...(layer.motion || {}) }
+	};
+}
+
+/** An audio clip with every field present, defaults filling the gaps. */
+export function normalizeClip(project, clip) {
+	return {
+		...createAudioClip(project, clip.path, Number(clip.sourceDuration) || Number(clip.length) || 1),
+		...clip
+	};
 }
 
 /**
